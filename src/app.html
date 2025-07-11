@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="icon" href="%sveltekit.assets%/favicon.png" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+        <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#722ED1',
+                        accent: '#FF7D00',
+                        dark: '#1D2129',
+                        light: '#F2F3F5',
+                        muted: '#86909C',
+                        techBlue: '#2563EB',
+                        cpuRed: '#DC2626',
+                        osGreen: '#059669',
+                        hardwarePurple: '#7C3AED',
+                        deepBlue: '#0d3b9d',
+                        electricBlue: '#2d8cff',
+                        heroStart: '#1e40af',
+                        heroEnd: '#3b82f6'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    },
+                    boxShadow: {
+                        'card': '0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03)',
+                        'card-hover': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                        'glow': '0 0 20px rgba(45, 140, 255, 0.6)'
+                    }
+                },
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-balance {
+                text-wrap: balance;
+            }
+            .bg-gradient-hero {
+                background: linear-gradient(135deg, theme('colors.heroStart') 0%, theme('colors.heroEnd') 100%);
+            }
+            .bg-blur {
+                backdrop-filter: blur(8px);
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .chip {
+                @apply px-3 py-1 rounded-full text-xs font-medium;
+            }
+            .chip-blue {
+                @apply bg-blue-100 text-blue-800;
+            }
+            .chip-red {
+                @apply bg-red-100 text-red-800;
+            }
+            .chip-green {
+                @apply bg-green-100 text-green-800;
+            }
+            .chip-purple {
+                @apply bg-purple-100 text-purple-800;
+            }
+            .code-block {
+                @apply bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto;
+            }
+            .hero-pattern {
+                background: 
+                    radial-gradient(circle at 10% 20%, rgba(45, 140, 255, 0.15) 0%, transparent 25%),
+                    radial-gradient(circle at 90% 80%, rgba(114, 46, 209, 0.1) 0%, transparent 25%),
+                    linear-gradient(135deg, theme('colors.heroStart') 0%, theme('colors.heroEnd') 100%);
+            }
+            .floating {
+                animation: floating 6s ease-in-out infinite;
+            }
+            @keyframes floating {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(-12px); }
+                100% { transform: translateY(0px); }
+            }
+            .glow-effect {
+                filter: drop-shadow(0 0 15px rgba(45, 140, 255, 0.6));
+            }
+            .curve-divider {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                overflow: hidden;
+                line-height: 0;
+                transform: rotate(180deg);
+            }
+            .curve-divider svg {
+                position: relative;
+                display: block;
+                width: calc(100% + 1.3px);
+                height: 100px;
+            }
+            .curve-divider .shape-fill {
+                fill: #F9FAFB;
+            }
+            .esec-key {
+                font-family: 'Fira Code', monospace;
+                letter-spacing: 0.5px;
+            }
+            .copy-btn {
+                transition: all 0.3s ease;
+            }
+            .copy-btn.copied {
+                background-color: #059669 !important;
+            }
+            .auth-tabs .active {
+                border-bottom: 3px solid #2563EB;
+                color: #2563EB;
+                font-weight: 600;
+            }
+        }
+    </style>
+		%sveltekit.head%
+	</head>
+	<body data-sveltekit-preload-data="hover">
+		<div style="display: contents">%sveltekit.body%</div>
+	</body>
+</html>
