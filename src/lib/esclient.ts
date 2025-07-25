@@ -41,7 +41,7 @@ export async function get_events(callback){
       client.subscribe(event,function(message){
          
         if (message[2] == "EOSE") client.unsubscribe(message[1]);
-        callback(message[2])
+        else callback(message[2])
       });      
 }
 
@@ -55,14 +55,14 @@ export async function get_users(callback){
       client.subscribe(event,function(message){
          
         if (message[2] == "EOSE") client.unsubscribe(message[1]);
-        callback(message[2])
+        else callback(message[2])
       });      
 }
 
 
 export async function get_permissions(callback){
     await client.connect();
-    
+
     let event = {    
         "ops": "R",
         "code": 303,
@@ -70,6 +70,6 @@ export async function get_permissions(callback){
       client.subscribe(event,function(message){
          
         if (message[2] == "EOSE") client.unsubscribe(message[1]);
-        callback(message[2])
+        else callback(message[2])
       });      
 }

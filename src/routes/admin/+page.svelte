@@ -1,17 +1,36 @@
 <script>
   import { onMount } from 'svelte';
   import Login from '$lib/login.svelte';
-  import {get_events} from '$lib/esclient';
+  import {get_events,get_users,get_permissions} from '$lib/esclient';
 
-  let events = [];
+  let events      = [];
+  let users       = [];
+  let permissions = [];
 
   function handle_events(e){
     console.log(e)
     events.push(e);
   }
-  get_events(handle_events);
 
-  onMount(() => {
+
+  function handle_users(e){
+    console.log(e)
+    users.push(e);
+  }
+
+  function handle_permissions(e){
+    console.log(e)
+    permissions.push(e);
+  }
+
+
+
+  onMount(async() => {
+    await get_events(handle_events);
+
+    await get_users(handle_users);
+
+    await get_permissions(handle_permissions);
     document.addEventListener('DOMContentLoaded', function() {
       // 用户菜单切换
       const userMenu = document.getElementById('userMenu');
