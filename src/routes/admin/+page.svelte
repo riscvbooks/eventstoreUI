@@ -1,41 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard | Events & Permissions</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: '#165DFF',
-            secondary: '#36CFC9',
-            dark: '#1D2129',
-            light: '#F2F3F5',
-            danger: '#F53F3F',
-            warning: '#FF7D00',
-            success: '#00B42A',
-            surface: '#F7F8FA',
-            darkSurface: '#0F172A'
-          },
-          fontFamily: {
-            inter: ['Inter', 'system-ui', 'sans-serif'],
-          },
-          boxShadow: {
-            'soft': '0 4px 20px rgba(0, 0, 0, 0.05)',
-            'hard': '0 2px 10px rgba(0, 0, 0, 0.08)',
-            'card': '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
-            'inset': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
-          }
-        },
+<script>
+  import { onMount } from 'svelte';
+  import Login from '$lib/login.svelte';
+  import {get_events} from '$lib/esclient';
+
+  let events = [];
+
+  function handle_events(e){
+    console.log(e)
+    events.push(e);
+  }
+  get_events(handle_events);
+
+  onMount(() => {
+    document.addEventListener('DOMContentLoaded', function() {
+      // 用户菜单切换
+      const userMenu = document.getElementById('userMenu');
+      const userDropdown = document.getElementById('userDropdown');
+      
+      if(userMenu) {
+        userMenu.addEventListener('click', function(e) {
+          e.stopPropagation();
+          userDropdown.classList.toggle('hidden');
+        });
+        
+        // 点击页面其他地方关闭菜单
+        document.addEventListener('click', function() {
+          userDropdown.classList.add('hidden');
+        });
       }
-    }
-  </script>
+      
+      // 登录按钮点击效果
+      const loginBtn = document.getElementById('loginBtn');
+      if(loginBtn) {
+        loginBtn.addEventListener('click', function() {
+          // 模拟登录过程
+          this.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> Authenticating...';
+          this.disabled = true;
+          
+          setTimeout(() => {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('adminContent').classList.remove('hidden');
+          }, 1500);
+        });
+      }
+      
+      // 生成密钥按钮
+      const generateKeyBtn = document.getElementById('generateKeyBtn');
+      if(generateKeyBtn) {
+        generateKeyBtn.addEventListener('click', function() {
+          const keyField = document.getElementById('esecKey');
+          keyField.value = 'esec1pvtkey_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+          keyField.classList.add('border-green-300', 'bg-green-50');
+          setTimeout(() => {
+            keyField.classList.remove('border-green-300', 'bg-green-50');
+          }, 2000);
+        });
+      }
+      
+      // 添加用户按钮
+      const addUserBtn = document.getElementById('addUserBtn');
+      if(addUserBtn) {
+        addUserBtn.addEventListener('click', function() {
+          alert('Add user functionality would open a modal in a real application.');
+        });
+      }
+      
+      // 侧边栏导航
+      const sidebarLinks = document.querySelectorAll('aside a');
+      sidebarLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          
+          // 移除所有活动状态
+          sidebarLinks.forEach(l => l.classList.remove('sidebar-active'));
+          
+          // 添加当前活动状态
+          this.classList.add('sidebar-active');
+          
+          // 隐藏所有内容区域
+          document.getElementById('usersSection').classList.add('hidden');
+          document.getElementById('eventsSection').classList.add('hidden');
+          document.getElementById('permissionsSection').classList.add('hidden');
+          
+          // 显示目标内容区域
+          if(this.getAttribute('href') === '#users') {
+            document.getElementById('usersSection').classList.remove('hidden');
+          } else if(this.getAttribute('href') === '#events') {
+            document.getElementById('eventsSection').classList.remove('hidden');
+          } else if(this.getAttribute('href') === '#permissions') {
+            document.getElementById('permissionsSection').classList.remove('hidden');
+          }
+        });
+      });
+    });
+  })
+
+</script>
+
+
+
+ 
   
   <style>
     body {
@@ -143,9 +207,11 @@
       font-weight: 500;
     }
   </style>
-</head>
+ 
+<svelte:head>
+    <title>eventstore - Admin</title>
+</svelte:head>
 
-<body class="font-inter bg-gradient-to-br from-[#f0f4ff] to-[#f8fafc] min-h-screen flex flex-col">
   <!-- 顶部导航栏 -->
   <header id="navbar" class="gradient-header shadow-lg fixed top-0 left-0 right-0 z-50 transition-all duration-300">
     <div class="container mx-auto px-4">
@@ -1339,88 +1405,5 @@
     </main>
   </div>
   
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // 用户菜单切换
-      const userMenu = document.getElementById('userMenu');
-      const userDropdown = document.getElementById('userDropdown');
-      
-      if(userMenu) {
-        userMenu.addEventListener('click', function(e) {
-          e.stopPropagation();
-          userDropdown.classList.toggle('hidden');
-        });
-        
-        // 点击页面其他地方关闭菜单
-        document.addEventListener('click', function() {
-          userDropdown.classList.add('hidden');
-        });
-      }
-      
-      // 登录按钮点击效果
-      const loginBtn = document.getElementById('loginBtn');
-      if(loginBtn) {
-        loginBtn.addEventListener('click', function() {
-          // 模拟登录过程
-          this.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> Authenticating...';
-          this.disabled = true;
-          
-          setTimeout(() => {
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('adminContent').classList.remove('hidden');
-          }, 1500);
-        });
-      }
-      
-      // 生成密钥按钮
-      const generateKeyBtn = document.getElementById('generateKeyBtn');
-      if(generateKeyBtn) {
-        generateKeyBtn.addEventListener('click', function() {
-          const keyField = document.getElementById('esecKey');
-          keyField.value = 'esec1pvtkey_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-          keyField.classList.add('border-green-300', 'bg-green-50');
-          setTimeout(() => {
-            keyField.classList.remove('border-green-300', 'bg-green-50');
-          }, 2000);
-        });
-      }
-      
-      // 添加用户按钮
-      const addUserBtn = document.getElementById('addUserBtn');
-      if(addUserBtn) {
-        addUserBtn.addEventListener('click', function() {
-          alert('Add user functionality would open a modal in a real application.');
-        });
-      }
-      
-      // 侧边栏导航
-      const sidebarLinks = document.querySelectorAll('aside a');
-      sidebarLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          
-          // 移除所有活动状态
-          sidebarLinks.forEach(l => l.classList.remove('sidebar-active'));
-          
-          // 添加当前活动状态
-          this.classList.add('sidebar-active');
-          
-          // 隐藏所有内容区域
-          document.getElementById('usersSection').classList.add('hidden');
-          document.getElementById('eventsSection').classList.add('hidden');
-          document.getElementById('permissionsSection').classList.add('hidden');
-          
-          // 显示目标内容区域
-          if(this.getAttribute('href') === '#users') {
-            document.getElementById('usersSection').classList.remove('hidden');
-          } else if(this.getAttribute('href') === '#events') {
-            document.getElementById('eventsSection').classList.remove('hidden');
-          } else if(this.getAttribute('href') === '#permissions') {
-            document.getElementById('permissionsSection').classList.remove('hidden');
-          }
-        });
-      });
-    });
-  </script>
-</body>
-</html>
+ 
+ 

@@ -112,7 +112,7 @@
 
 
 <svelte:head>
-    <title>akaebook - 计算技术专业资源平台</title>
+    <title>esbook - 计算技术专业资源平台</title>
 </svelte:head>
 
 <main class="font-inter bg-light text-dark antialiased">
