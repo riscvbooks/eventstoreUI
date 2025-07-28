@@ -1,7 +1,31 @@
 <script>
   import { onMount } from 'svelte';
-  import Login from '$lib/login.svelte';
+ 
   import {get_events,get_users,get_permissions} from '$lib/esclient';
+ 
+  import {WebStorage} from '$lib/WebStorage'
+  import {getKey} from "$lib/getkey";
+  
+
+  import {    
+    generateSecretKey,
+    getPublicKey,
+    esecEncode,
+    esecDecode,
+  } from "eventstore-tools/src/key";
+     
+
+ 
+
+  let Keypriv ;
+  let Keypub ;
+
+  let isNewAccount = false;
+  let emailInput;
+  let privateKeyInput;
+  let newpriv;
+  
+ 
 
   let events      = [];
   let users       = [];
@@ -23,14 +47,59 @@
     permissions.push(e);
   }
 
+  const generateKey = () => {
+    // 实际项目中应该使用加密库生成私钥
+    const keyField = document.getElementById('esecKey');
+    newpriv = generateSecretKey()
+    keyField.value = esecEncode(newpriv);
+    keyField.classList.add('border-green-300', 'bg-green-50');
+    setTimeout(() => {
+            keyField.classList.remove('border-green-300', 'bg-green-50');
+    }, 2000);
+    privateKeyInput = keyField.value;
+  };
 
+  const toggleCreate = () => {
+    isNewAccount = !isNewAccount;
+    
+    privateKeyInput = ''; // 切换模式时清空输入
+    emailInput = '';
+  };
+
+  const LoginorCreate = ()=>{
+    if (isNewAccount){//create
+
+      create_user(emailInput,getPublicKey(newpriv),newpriv);
+    } else { //login
+      console.log(privateKeyInput);
+      if (!privateKeyInput.startsWith('esec1') || privateKeyInput.length < 48) {
+        return alert('无效的私钥格式');
+      }
+    }
+
+    let storage = new WebStorage(localStorage);
+    Keypriv = esecDecode(privateKeyInput)['data']
+        
+    Keypub = getPublicKey(Keypriv) 
+    storage.set("keyPriv", Keypriv);
+
+  }
 
   onMount(async() => {
+  
+    let Key = getKey();
+    Keypriv = Key.Keypriv;
+    Keypub = Key.Keypub;
+
+ 
+
     await get_events(handle_events);
 
     await get_users(handle_users);
 
     await get_permissions(handle_permissions);
+
+ 
     document.addEventListener('DOMContentLoaded', function() {
       // 用户菜单切换
       const userMenu = document.getElementById('userMenu');
@@ -63,18 +132,7 @@
         });
       }
       
-      // 生成密钥按钮
-      const generateKeyBtn = document.getElementById('generateKeyBtn');
-      if(generateKeyBtn) {
-        generateKeyBtn.addEventListener('click', function() {
-          const keyField = document.getElementById('esecKey');
-          keyField.value = 'esec1pvtkey_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-          keyField.classList.add('border-green-300', 'bg-green-50');
-          setTimeout(() => {
-            keyField.classList.remove('border-green-300', 'bg-green-50');
-          }, 2000);
-        });
-      }
+  
       
       // 添加用户按钮
       const addUserBtn = document.getElementById('addUserBtn');
@@ -258,7 +316,7 @@
                   <i class="fa fa-user"></i>
                 </div>
               </div>
-              <span id="usernameDisplay" class="hidden md:inline-block font-medium text-white">Admin User</span>
+              <span id="usernameDisplay" class="hidden md:inline-block font-medium text-white">{Keypub ? 'Admin User' : '未登录'}</span>
               <i class="fa fa-chevron-down text-xs text-white/70"></i>
             </button>
             
@@ -359,49 +417,112 @@
     <!-- 主内容区 -->
     <main class="flex-1 ml-64 p-6 transition-all duration-300">
       <!-- 登录表单 (初始显示) -->
-      <div id="loginSection" class="max-w-md mx-auto mt-8">
-        <div class="card bg-white shadow-xl overflow-hidden">
-          <div class="gradient-header p-6 text-center">
-            <div class="w-16 h-16 mx-auto bg-white/10 rounded-full flex items-center justify-center mb-4 animate-float">
-              <i class="fa fa-lock text-white text-2xl"></i>
-            </div>
-            <h2 class="text-2xl font-bold text-white">ESec Authentication</h2>
-            <p class="text-white/80 mt-1">Secure login with your private key</p>
-          </div>
-          
-          <div class="p-6">
-            <div class="mb-6">
-              <label for="esecKey" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
-                <i class="fa fa-key mr-2 text-primary"></i> 
-                <span>ESec Private Key</span>
-              </label>
-              <div class="relative">
-                <textarea id="esecKey" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm" placeholder="Paste your esec1... private key here"></textarea>
-                <button id="generateKeyBtn" class="absolute right-3 bottom-3 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors flex items-center">
-                  <i class="fa fa-refresh mr-1"></i> Generate
-                </button>
+      {#if !Keypub}
+        <div id="loginSection" class="max-w-md mx-auto mt-8">
+          <div class="card bg-white shadow-xl overflow-hidden">
+            <div class="gradient-header p-6 text-center">
+              <div class="w-16 h-16 mx-auto bg-white/10 rounded-full flex items-center justify-center mb-4 animate-float">
+                <i class="fa fa-{isNewAccount ? 'user-plus' : 'sign-in'} text-white text-2xl"></i>
               </div>
-              <p class="text-xs text-gray-500 mt-2 flex items-center">
-                <i class="fa fa-info-circle mr-1"></i> Your key is securely encrypted during transmission
+              <h2 class="text-2xl font-bold text-white">
+                {isNewAccount ? '创建新账号' : '已有账号登录'}
+              </h2>
+              <p class="text-white/80 mt-1">
+                {isNewAccount 
+                  ? '生成新的密钥对并注册账号' 
+                  : '使用已有私钥登录'}
               </p>
             </div>
             
-            <div class="mb-4">
-              <button id="loginBtn" class="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center shadow-md hover:shadow-lg pulse">
-                <i class="fa fa-sign-in mr-2"></i> Sign In
-              </button>
-            </div>
-            
-            <div class="text-center text-sm text-gray-500">
-              <p class="mb-1">Don't have an account? <a href="#" class="text-primary hover:underline font-medium">Create one</a></p>
-              <p class="text-warning text-xs mt-3 flex items-center justify-center">
+            <div class="p-6">
+              <!-- 新建账号模式显示邮箱输入 -->
+              {#if isNewAccount}
+                <div class="mb-4">
+                  <label for="email" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                    <i class="fa fa-envelope mr-2 text-primary"></i> 
+                    <span>邮箱地址</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    bind:value={emailInput}
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm" 
+                    placeholder="your@email.com"
+                  />
+                  <p class="text-xs text-gray-500 mt-1 flex items-center">
+                    <i class="fa fa-info-circle mr-1"></i> 
+                    <span>用于接收重要通知和恢复账号</span>
+                  </p>
+                </div>
+              {/if}
+              
+              <div class="mb-6">
+                <label for="esecKey" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                  <i class="fa fa-key mr-2 text-primary"></i> 
+                  <span>{isNewAccount ? '生成的私钥' : '已有私钥'}</span>
+                </label>
+                <div class="relative">
+                  <textarea 
+                    id="esecKey" 
+                    bind:value={privateKeyInput}
+                    rows="4" 
+                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors text-sm" 
+                    placeholder={isNewAccount 
+                      ? "生成新的私钥 (将自动填充)" 
+                      : "粘贴您已有的 esec1... 私钥"}
+                  ></textarea>
+                  {#if isNewAccount}
+                    <button 
+                      on:click={generateKey} 
+                      class="absolute right-3 bottom-3 text-xs bg-primary text-white px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors flex items-center"
+                    >
+                      <i class="fa fa-refresh mr-1"></i> 生成新密钥对
+                    </button>
+                  {/if}
+                </div>
+                {#if isNewAccount}
+                  <p class="text-xs text-gray-500 mt-2 flex items-center">
+                    <i class="fa fa-info-circle mr-1"></i> 
+                    <span>点击"生成新密钥对"自动创建安全的密钥对</span>
+                  </p>
+                {:else}
+                  <p class="text-xs text-gray-500 mt-2 flex items-center">
+                    <i class="fa fa-info-circle mr-1"></i> 
+                    <span>从安全存储中粘贴您的私钥</span>
+                  </p>
+                {/if}
+              </div>
+              
+              <div class="mb-4">
+                <button 
+                  on:click={LoginorCreate} 
+                  class="w-full bg-primary text-white py-3 px-4 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center shadow-md hover:shadow-lg"
+                >
+                  <i class="fa fa-{isNewAccount ? 'user-plus' : 'sign-in'} mr-2"></i> 
+                  {isNewAccount ? '创建账号' : '登录'}
+                </button>
+              </div>
+              
+              <div class="text-center text-sm text-gray-500">
+                <button 
+                  type="button" 
+                  on:click={toggleCreate} 
+                  class="text-primary hover:underline font-medium bg-transparent border-none p-0"
+                >
+                  {isNewAccount 
+                    ? '已有账号？点击登录' 
+                    : '没有账号？创建一个'}
+                </button>
+              </div>
+              
+              <p class="text-warning text-xs mt-4 flex items-center justify-center">
                 <i class="fa fa-exclamation-triangle mr-1"></i> 
-                <span>Your key is stored in localStorage for this session</span>
+                <span>私钥将存储在本地浏览器中，请确保您的设备安全</span>
               </p>
             </div>
           </div>
         </div>
-      </div>
+      {/if}
       
       <!-- 管理内容区 (默认隐藏) -->
       <div id="adminContent" class="hidden">

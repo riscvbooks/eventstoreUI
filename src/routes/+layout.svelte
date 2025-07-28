@@ -1,5 +1,11 @@
 <script lang="ts">	
-	let { children } = $props();
+
+let { children } = $props();
+ 
+ 
 </script>
 
-{@render children()}
+ 
+  <!-- 已认证，渲染子组件 -->
+<slot>{children}  </slot>
+ 
