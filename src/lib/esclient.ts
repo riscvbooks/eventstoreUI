@@ -14,7 +14,7 @@ import {WebSocketClient } from "eventstore-tools/src/WebSocketClient";
 
 let client =  new WebSocketClient(esserver);
  
-export async function create_user(email,pubkey,privkey){
+export async function create_user(email,pubkey,privkey,callback){
     await client.connect().catch(error => {});
 
     let event = {
@@ -27,7 +27,7 @@ export async function create_user(email,pubkey,privkey){
         }
       }
     client.publish(secureEvent(event,privkey),function(message){
-        console.log(message);
+        callback(message);
     });  
 }
 

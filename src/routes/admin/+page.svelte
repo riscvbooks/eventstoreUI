@@ -1,11 +1,13 @@
 <script>
   import { onMount } from 'svelte';
  
-  import {get_events,get_users,get_permissions} from '$lib/esclient';
+  import {create_user,get_events,get_users,get_permissions} from '$lib/esclient';
  
   import {WebStorage} from '$lib/WebStorage'
   import {getKey} from "$lib/getkey";
-  
+  import {getColorClass,getUserName} from "$lib/users";
+  import {getPerm } from "$lib/permissions";
+  import {selectRandomIcon} from "$lib/events";
 
   import {    
     generateSecretKey,
@@ -19,32 +21,56 @@
 
   let Keypriv ;
   let Keypub ;
-
+   
   let isNewAccount = false;
   let emailInput;
   let privateKeyInput;
   let newpriv;
-  
+  let showLogin = false;
  
 
   let events      = [];
   let users       = [];
   let permissions = [];
 
+  let showToast = false;
+  let toastMessage = '';
+  let toastType = 'success'; // success, error, warning, info
+
+  const showToastMessage = (message, type = 'success') => {
+    toastMessage = message;
+    toastType = type;
+    showToast = true;
+    
+    // 3秒后自动隐藏
+    setTimeout(() => {
+      showToast = false;
+    }, 3000);
+  }
+
   function handle_events(e){
-    console.log(e)
-    events.push(e);
+    let temp = events;
+    e.icon = selectRandomIcon();
+    temp.push(e)
+
+    events = [...temp];
+    console.log(events)
   }
 
 
   function handle_users(e){
-    console.log(e)
-    users.push(e);
+    let temp = users;
+    temp.push(e)
+    users = [...temp]
+     
   }
 
   function handle_permissions(e){
-    console.log(e)
-    permissions.push(e);
+    
+    let temp = permissions;
+    temp.push(e);
+    permissions = [...temp];
+     
   }
 
   const generateKey = () => {
@@ -67,22 +93,101 @@
   };
 
   const LoginorCreate = ()=>{
+    console.log(privateKeyInput);
+
+    if (!privateKeyInput.startsWith('esec1') || privateKeyInput.length < 48) {
+        return alert('无效的私钥格式');
+    }
+         
+
     if (isNewAccount){//create
 
-      create_user(emailInput,getPublicKey(newpriv),newpriv);
+      create_user(emailInput,getPublicKey(newpriv),newpriv,function(message){
+        showToastMessage(message[2].message);
+        if (message[2].code == 200){
+          let storage = new WebStorage(localStorage);
+          Keypriv = esecDecode(privateKeyInput)['data']
+        
+          Keypub = getPublicKey(Keypriv) 
+          storage.set("keyPriv", Keypriv);
+          showToastMessage(message[2].message);
+          setTimeout(() => {
+             window.location.reload();
+          }, 1000);
+          
+        } else {
+          showToastMessage(message[2].message,"warning");
+        }
+ 
+
+      });
     } else { //login
-      console.log(privateKeyInput);
-      if (!privateKeyInput.startsWith('esec1') || privateKeyInput.length < 48) {
-        return alert('无效的私钥格式');
-      }
+
+ 
+      let storage = new WebStorage(localStorage);
+      Keypriv = esecDecode(privateKeyInput)['data']
+        
+      Keypub = getPublicKey(Keypriv) 
+      storage.set("keyPriv", Keypriv);
     }
 
-    let storage = new WebStorage(localStorage);
-    Keypriv = esecDecode(privateKeyInput)['data']
-        
-    Keypub = getPublicKey(Keypriv) 
-    storage.set("keyPriv", Keypriv);
 
+
+  }
+
+  const userMenu =()=>{
+    if (!Keypub) return ;
+    
+    const userDropdown = document.getElementById('userDropdown');
+
+    userDropdown.classList.toggle('hidden');
+
+  }
+
+  const Logout = ()=> {
+    let storage = new WebStorage(localStorage);
+    storage.remove("keyPriv");
+    window.location.reload();
+
+  }
+
+  function setupSidebar() {
+    const sidebarLinks = document.querySelectorAll('#sidebar nav a');
+     
+    sidebarLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            
+            e.preventDefault();
+            
+            // 移除所有激活状态
+            sidebarLinks.forEach(l => {
+                l.classList.remove('sidebar-active');
+                l.classList.add('text-gray-700');
+                l.querySelector('i').classList.add('text-gray-500');
+                l.querySelector('i').classList.remove('text-primary');
+            });
+            
+            // 添加当前激活状态
+            link.classList.add('sidebar-active');
+            link.classList.remove('text-gray-700');
+            link.querySelector('i').classList.remove('text-gray-500');
+            link.querySelector('i').classList.add('text-primary');
+            
+            // 获取链接目标
+            const target = link.getAttribute('href').substring(1);
+            
+            // 更新标题
+            if (target === 'users') {
+                document.getElementById('usersSection').classList.remove('hidden'); 
+                document.getElementById('eventsSection').classList.add('hidden');
+                
+            } else if (target === 'events') {
+                document.getElementById('eventsSection').classList.remove('hidden');
+                document.getElementById('usersSection').classList.add('hidden');  
+                
+            }
+        });
+    });
   }
 
   onMount(async() => {
@@ -91,7 +196,14 @@
     Keypriv = Key.Keypriv;
     Keypub = Key.Keypub;
 
- 
+    if (!Keypriv) {
+      showLogin = true;
+      document.getElementById('usersSection').classList.add('hidden');
+    } else  {
+      document.getElementById('usersSection').classList.remove('hidden');
+      
+      document.getElementById('adminContent').classList.remove('hidden');
+    }
 
     await get_events(handle_events);
 
@@ -99,77 +211,9 @@
 
     await get_permissions(handle_permissions);
 
- 
-    document.addEventListener('DOMContentLoaded', function() {
-      // 用户菜单切换
-      const userMenu = document.getElementById('userMenu');
-      const userDropdown = document.getElementById('userDropdown');
-      
-      if(userMenu) {
-        userMenu.addEventListener('click', function(e) {
-          e.stopPropagation();
-          userDropdown.classList.toggle('hidden');
-        });
-        
-        // 点击页面其他地方关闭菜单
-        document.addEventListener('click', function() {
-          userDropdown.classList.add('hidden');
-        });
-      }
-      
-      // 登录按钮点击效果
-      const loginBtn = document.getElementById('loginBtn');
-      if(loginBtn) {
-        loginBtn.addEventListener('click', function() {
-          // 模拟登录过程
-          this.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i> Authenticating...';
-          this.disabled = true;
-          
-          setTimeout(() => {
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('adminContent').classList.remove('hidden');
-          }, 1500);
-        });
-      }
-      
-  
-      
-      // 添加用户按钮
-      const addUserBtn = document.getElementById('addUserBtn');
-      if(addUserBtn) {
-        addUserBtn.addEventListener('click', function() {
-          alert('Add user functionality would open a modal in a real application.');
-        });
-      }
-      
-      // 侧边栏导航
-      const sidebarLinks = document.querySelectorAll('aside a');
-      sidebarLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-          e.preventDefault();
-          
-          // 移除所有活动状态
-          sidebarLinks.forEach(l => l.classList.remove('sidebar-active'));
-          
-          // 添加当前活动状态
-          this.classList.add('sidebar-active');
-          
-          // 隐藏所有内容区域
-          document.getElementById('usersSection').classList.add('hidden');
-          document.getElementById('eventsSection').classList.add('hidden');
-          document.getElementById('permissionsSection').classList.add('hidden');
-          
-          // 显示目标内容区域
-          if(this.getAttribute('href') === '#users') {
-            document.getElementById('usersSection').classList.remove('hidden');
-          } else if(this.getAttribute('href') === '#events') {
-            document.getElementById('eventsSection').classList.remove('hidden');
-          } else if(this.getAttribute('href') === '#permissions') {
-            document.getElementById('permissionsSection').classList.remove('hidden');
-          }
-        });
-      });
-    });
+    
+    setupSidebar();
+     
   })
 
 </script>
@@ -283,6 +327,59 @@
       font-size: 0.75rem;
       font-weight: 500;
     }
+
+    /* 新增：提示弹框样式 */
+    .toast {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0.9);
+        padding: 1rem 1.5rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 9999;
+        opacity: 0;
+        transition: all 0.3s ease-in-out;
+        display: flex;
+        align-items: center;
+        max-width: 300px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .toast.show {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }    
+  
+  .toast.success {
+    background-color: #10B981;
+    color: white;
+  }
+  
+  .toast.error {
+    background-color: #EF4444;
+    color: white;
+  }
+  
+  .toast.warning {
+    background-color: #F59E0B;
+    color: white;
+  }
+  
+  .toast.info {
+    background-color: #3B82F6;
+    color: white;
+  }
+  
+  .toast-icon {
+    margin-right: 0.75rem;
+    font-size: 1.25rem;
+  }
+  
+  .toast-message {
+    font-size: 0.9rem;
+  }
   </style>
  
 <svelte:head>
@@ -309,7 +406,7 @@
           </div>
           
           <div id="userMenu" class="relative">
-            <button class="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors">
+            <button class="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors" on:click={userMenu}>
               <div class="relative">
                 <!-- 管理员头像使用虚拟图标 -->
                 <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
@@ -328,7 +425,7 @@
                 <i class="fa fa-cog mr-3 text-primary"></i>Settings
               </a>
               <div class="border-t border-gray-100 my-1"></div>
-              <a href="#" id="logoutLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+              <a href="#" id="logoutLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center" on:click={Logout}>
                 <i class="fa fa-sign-out mr-3 text-danger"></i>Logout
               </a>
             </div>
@@ -351,13 +448,13 @@
           <a href="#users" class="sidebar-active flex items-center px-4 py-3 rounded-lg transition-colors">
             <i class="fa fa-users w-5 text-center mr-3 text-primary"></i>
             <span>Users</span>
-            <span class="ml-auto bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">12</span>
+            <span class="ml-auto bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">{users.length}</span>
           </a>
           
           <a href="#events" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
             <i class="fa fa-calendar w-5 text-center mr-3 text-gray-500"></i>
             <span>Events</span>
-            <span class="ml-auto bg-warning/10 text-warning text-xs font-medium px-2 py-0.5 rounded-full">5</span>
+            <span class="ml-auto bg-warning/10 text-warning text-xs font-medium px-2 py-0.5 rounded-full">{events.length}</span>
           </a>
           
           <a href="#permissions" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -417,7 +514,7 @@
     <!-- 主内容区 -->
     <main class="flex-1 ml-64 p-6 transition-all duration-300">
       <!-- 登录表单 (初始显示) -->
-      {#if !Keypub}
+      {#if showLogin }
         <div id="loginSection" class="max-w-md mx-auto mt-8">
           <div class="card bg-white shadow-xl overflow-hidden">
             <div class="gradient-header p-6 text-center">
@@ -579,31 +676,32 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ESec Public Key</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <!--th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th-->
                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                   <!-- 用户行数据 -->
+                   {#each users as user,index}
                   <tr class="hover:bg-gray-50 transition-colors">
                     <td class="px-6 py-4">
                       <div class="flex items-center">
-                        <div class="user-avatar bg-primary mr-3">JD</div>
+                        <div class="user-avatar {getColorClass(index)} mr-3">{getUserName(user.email).initials}</div>
                         <div>
-                          <div class="text-sm font-medium text-gray-900">John Doe</div>
-                          <div class="text-sm text-gray-500">johndoe@example.com</div>
+                          <div class="text-sm font-medium text-gray-900"></div>
+                          <div class="text-sm text-gray-500">{user.email}</div>
                         </div>
                       </div>
                     </td>
                     <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_ab3d9e7f6c5d4a1b2</div>
+                      <div class="text-sm text-gray-600">{user.pubkey}</div>
                     </td>
                     <td class="px-6 py-4">
-                      <span class="role-badge bg-primary/10 text-primary">Administrator</span>
+                      <span class="role-badge bg-primary/10 text-primary">{getPerm(permissions,user.pubkey)}</span>
                     </td>
-                    <td class="px-6 py-4">
+                    <!--td class="px-6 py-4">
                       <span class="status-badge bg-success/10 text-success">Active</span>
-                    </td>
+                    </td-->
                     <td class="px-6 py-4 text-right">
                       <div class="flex justify-end space-x-2">
                         <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
@@ -615,192 +713,9 @@
                       </div>
                     </td>
                   </tr>
+                   {/each}
                   
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-secondary mr-3">JS</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                          <div class="text-sm text-gray-500">janesmith@company.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_1a2b3c4d5e6f7g8h</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-secondary/10 text-secondary">Editor</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-success/10 text-success">Active</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-purple-500 mr-3">RC</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">Robert Chen</div>
-                          <div class="text-sm text-gray-500">robert.chen@domain.com</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_9i8j7k6l5m4n3o2p</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-purple-100 text-purple-800">Developer</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-success/10 text-success">Active</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-orange-500 mr-3">AW</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">Amanda Wilson</div>
-                          <div class="text-sm text-gray-500">amanda.w@business.io</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_z1y2x3w4v5u6t7s8</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-orange-100 text-orange-800">Support</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-warning/10 text-warning">Pending</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-green-500 mr-3">MT</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">Michael Taylor</div>
-                          <div class="text-sm text-gray-500">michael.t@enterprise.net</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_r9q8s7t6u5v4w3x2</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-green-100 text-green-800">Viewer</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-danger/10 text-danger">Suspended</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-blue-500 mr-3">SL</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">Sarah Lee</div>
-                          <div class="text-sm text-gray-500">sarah.lee@organization.org</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_5f6g7h8i9j0k1l2</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-blue-100 text-blue-800">Analyst</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-success/10 text-success">Active</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="px-6 py-4">
-                      <div class="flex items-center">
-                        <div class="user-avatar bg-red-500 mr-3">DK</div>
-                        <div>
-                          <div class="text-sm font-medium text-gray-900">David Kim</div>
-                          <div class="text-sm text-gray-500">david.kim@startup.tech</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-sm text-gray-600">esec1pvtkey_m3n4b5v6c7x8z9q0</div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="role-badge bg-red-100 text-red-800">Auditor</span>
-                    </td>
-                    <td class="px-6 py-4">
-                      <span class="status-badge bg-warning/10 text-warning">Pending</span>
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                      <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                          <i class="fa fa-pencil"></i>
-                        </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                          <i class="fa fa-trash-o"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                
                 </tbody>
               </table>
             </div>
@@ -1021,36 +936,40 @@
                   <thead class="bg-gray-50">
                     <tr>
                       <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
                       <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>                  
                       <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
+
+                   {#each events as event }
                     <tr class="hover:bg-gray-50 transition-colors">
                       <td class="px-6 py-4">
                         <div class="flex items-center">
-                          <div class="flex-shrink-0 w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center">
-                            <i class="fa fa-calendar text-primary"></i>
+                          <div class="flex-shrink-0 w-10 h-10 rounded-md {event.icon.bgClass} flex items-center justify-center">
+                            <i class="fa {event.icon.iconClass} {event.icon.textClass}"></i>
                           </div>
                           <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">Tech Conference 2023</div>
-                            <div class="text-sm text-gray-500">Annual technology conference</div>
+                            <div class="text-sm font-medium text-gray-900">{JSON.stringify(event.data).substring(0, 20)}</div>
+                            <div class="text-sm text-gray-500"> </div>
                           </div>
                         </div>
                       </td>
                       <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">John Doe</div>
-                        <div class="text-sm text-gray-500">johndoe@example.com</div>
+                       {event.code}
+
                       </td>
                       <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Oct 15-17, 2023</div>
-                        <div class="text-sm text-gray-500">10:00 AM - 6:00 PM</div>
+                       
+                        <div class="text-sm text-gray-500">{event.user.substring(0,10)}...{event.user.substring(54)}</div>
                       </td>
                       <td class="px-6 py-4">
-                        <span class="status-badge bg-warning/10 text-warning">Pending</span>
+                        <div class="text-sm text-gray-900">{event.servertimestamp.split("T")[0]}</div>
+                        <div class="text-sm text-gray-500">{event.servertimestamp.split("T")[1]}</div>
                       </td>
+                   
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
                           <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
@@ -1066,119 +985,10 @@
                       </td>
                     </tr>
                     
-                    <tr class="hover:bg-gray-50 transition-colors">
-                      <td class="px-6 py-4">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0 w-10 h-10 rounded-md bg-secondary/10 flex items-center justify-center">
-                            <i class="fa fa-music text-secondary"></i>
-                          </div>
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">Summer Music Festival</div>
-                            <div class="text-sm text-gray-500">Outdoor music festival</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Emma Wilson</div>
-                        <div class="text-sm text-gray-500">emma@example.com</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Jul 22, 2023</div>
-                        <div class="text-sm text-gray-500">12:00 PM - 10:00 PM</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="status-badge bg-success/10 text-success">Published</span>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                            <i class="fa fa-eye"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors">
-                            <i class="fa fa-check"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                            <i class="fa fa-trash-o"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                    {/each}
+           
                     
-                    <tr class="hover:bg-gray-50 transition-colors">
-                      <td class="px-6 py-4">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0 w-10 h-10 rounded-md bg-purple-100 flex items-center justify-center">
-                            <i class="fa fa-graduation-cap text-purple-600"></i>
-                          </div>
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">Education Workshop</div>
-                            <div class="text-sm text-gray-500">Teaching strategies seminar</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Robert Chen</div>
-                        <div class="text-sm text-gray-500">robertc@example.com</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Sep 10, 2023</div>
-                        <div class="text-sm text-gray-500">9:00 AM - 4:00 PM</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="status-badge bg-success/10 text-success">Published</span>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                            <i class="fa fa-eye"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors">
-                            <i class="fa fa-check"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                            <i class="fa fa-trash-o"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
                     
-                    <tr class="hover:bg-gray-50 transition-colors">
-                      <td class="px-6 py-4">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0 w-10 h-10 rounded-md bg-red-100 flex items-center justify-center">
-                            <i class="fa fa-exclamation-triangle text-danger"></i>
-                          </div>
-                          <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">Charity Gala</div>
-                            <div class="text-sm text-gray-500">Annual fundraising event</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Lisa Brown</div>
-                        <div class="text-sm text-gray-500">lisa@example.com</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <div class="text-sm text-gray-900">Nov 5, 2023</div>
-                        <div class="text-sm text-gray-500">7:00 PM - 11:00 PM</div>
-                      </td>
-                      <td class="px-6 py-4">
-                        <span class="status-badge bg-danger/10 text-danger">Rejected</span>
-                      </td>
-                      <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
-                            <i class="fa fa-eye"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors">
-                            <i class="fa fa-check"></i>
-                          </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
-                            <i class="fa fa-trash-o"></i>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -1538,12 +1348,30 @@
         
         <!-- 底部信息 -->
         <div class="mt-8 text-center text-sm text-gray-500">
-          <p>© 2023 Admin Dashboard. All rights reserved.</p>
-          <p class="mt-1">v2.4.1 | Secure Authentication System</p>
+          <p>© 2025 eventstore Admin Dashboard. All rights reserved.</p>
+          <p class="mt-1"> </p>
         </div>
       </div>
     </main>
   </div>
   
  
+<!-- 新增：提示弹框组件 -->
+{#if showToast}
  
+  <div class="toast {toastType} show">
+    <div class="toast-icon">
+      {#if toastType === 'success'}
+        <i class="fa fa-check-circle"></i>
+      {:else if toastType === 'error'}
+        <i class="fa fa-times-circle"></i>
+      {:else if toastType === 'warning'}
+        <i class="fa fa-exclamation-triangle"></i>
+      {:else if toastType === 'info'}
+        <i class="fa fa-info-circle"></i>
+      {/if}
+    </div>
+    <div class="toast-message">{toastMessage}</div>
+  </div>
+  
+{/if} 
