@@ -73,3 +73,17 @@ export async function get_permissions(callback){
         else callback(message[2])
       });      
 }
+
+export async function delete_user(user,adminpubkey,adminprivkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {    
+    "ops": "D",
+    "code": 102,
+  }
+  event.user = adminpubkey;
+  event.data = {pubkey:user}
+  client.publish(secureEvent(event,adminprivkey),function(message){     
+        if (message[2] != "EOSE") callback(message[2])
+  }); 
+}

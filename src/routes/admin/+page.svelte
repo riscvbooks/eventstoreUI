@@ -1,7 +1,11 @@
 <script>
   import { onMount } from 'svelte';
  
-  import {create_user,get_events,get_users,get_permissions} from '$lib/esclient';
+  import {create_user,get_events,
+    get_users,
+    get_permissions,
+    delete_user
+  } from '$lib/esclient';
  
   import {WebStorage} from '$lib/WebStorage'
   import {getKey} from "$lib/getkey";
@@ -54,7 +58,7 @@
     temp.push(e)
 
     events = [...temp];
-    console.log(events)
+  
   }
 
 
@@ -73,13 +77,27 @@
      
   }
 
+  function deleteUser (pubkey){
+    let adminpubkey = Keypub;
+    let adminprivkey = Keypriv;
+    delete_user(pubkey,adminpubkey,adminprivkey,function(message) {
+      
+      showToastMessage(message.message);
+      if (message.code == 200){
+          setTimeout(() => {
+             window.location.reload();
+          }, 1000);
+      }
+    });
+  }
+
   const generateKey = () => {
     // 实际项目中应该使用加密库生成私钥
     const keyField = document.getElementById('esecKey');
     newpriv = generateSecretKey()
     keyField.value = esecEncode(newpriv);
     keyField.classList.add('border-green-300', 'bg-green-50');
-    setTimeout(() => {
+    setTimeout(() => {return { code: 200, message: '用户创建成功' };
             keyField.classList.remove('border-green-300', 'bg-green-50');
     }, 2000);
     privateKeyInput = keyField.value;
@@ -129,6 +147,10 @@
         
       Keypub = getPublicKey(Keypriv) 
       storage.set("keyPriv", Keypriv);
+      showToastMessage("登录成功！")
+      setTimeout(() => {
+             window.location.reload();
+          }, 1000);
     }
 
 
@@ -707,7 +729,7 @@
                         <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
                           <i class="fa fa-pencil"></i>
                         </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteUser(user.pubkey)}>
                           <i class="fa fa-trash-o"></i>
                         </button>
                       </div>
@@ -794,138 +816,11 @@
               </div>
             </div>
           </div>
-          
-          <!-- 事件卡片网格 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- 事件卡片 1 -->
-            <div class="card overflow-hidden">
-              <div class="p-5">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="status-badge bg-warning/10 text-warning">Pending</span>
-                  <span class="text-xs text-gray-500">Today, 10:30 AM</span>
-                </div>
-                
-                <h3 class="text-lg font-bold text-gray-800 mb-2">Tech Conference 2023</h3>
-                <p class="text-gray-600 text-sm mb-4">Annual technology conference featuring industry leaders and innovators.</p>
-                
-                <div class="bg-gray-100 rounded-lg p-3 mb-4">
-                  <div class="flex items-center mb-3">
-                    <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-                      <i class="fa fa-user"></i>
-                    </div>
-                    <div class="ml-2">
-                      <p class="text-sm font-medium">John Doe</p>
-                      <p class="text-xs text-gray-500">johndoe@example.com</p>
-                    </div>
-                  </div>
-                  
-                  <div class="flex items-center text-xs">
-                    <i class="fa fa-calendar text-primary mr-2"></i>
-                    <span>Oct 15-17, 2023</span>
-                  </div>
-                  <div class="flex items-center text-xs mt-1">
-                    <i class="fa fa-map-marker text-primary mr-2"></i>
-                    <span>Convention Center, San Francisco</span>
-                  </div>
-                </div>
-                
-                <div class="flex justify-between">
-                  <button class="flex-1 bg-primary/10 text-primary px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                    <i class="fa fa-edit mr-1"></i> Edit
-                  </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors ml-2">
-                    <i class="fa fa-trash mr-1"></i> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 事件卡片 2 -->
-            <div class="card overflow-hidden">
-              <div class="p-5">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="status-badge bg-success/10 text-success">Published</span>
-                  <span class="text-xs text-gray-500">Yesterday, 3:45 PM</span>
-                </div>
-                
-                <h3 class="text-lg font-bold text-gray-800 mb-2">Art Exhibition Opening</h3>
-                <p class="text-gray-600 text-sm mb-4">Contemporary art exhibition featuring local artists and installations.</p>
-                
-                <div class="bg-gray-100 rounded-lg p-3 mb-4">
-                  <div class="flex items-center mb-3">
-                    <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-                      <i class="fa fa-user"></i>
-                    </div>
-                    <div class="ml-2">
-                      <p class="text-sm font-medium">Sarah Johnson</p>
-                      <p class="text-xs text-gray-500">sarahj@example.com</p>
-                    </div>
-                  </div>
-                  
-                  <div class="flex items-center text-xs">
-                    <i class="fa fa-calendar text-primary mr-2"></i>
-                    <span>Sep 22 - Oct 30, 2023</span>
-                  </div>
-                  <div class="flex items-center text-xs mt-1">
-                    <i class="fa fa-map-marker text-primary mr-2"></i>
-                    <span>City Art Gallery, New York</span>
-                  </div>
-                </div>
-                
-                <div class="flex justify-between">
-                  <button class="flex-1 bg-primary/10 text-primary px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                    <i class="fa fa-edit mr-1"></i> Edit
-                  </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors ml-2">
-                    <i class="fa fa-trash mr-1"></i> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <!-- 事件卡片 3 -->
-            <div class="card overflow-hidden">
-              <div class="p-5">
-                <div class="flex items-center justify-between mb-3">
-                  <span class="status-badge bg-danger/10 text-danger">Rejected</span>
-                  <span class="text-xs text-gray-500">Sep 5, 2023</span>
-                </div>
-                
-                <h3 class="text-lg font-bold text-gray-800 mb-2">Music Festival</h3>
-                <p class="text-gray-600 text-sm mb-4">Annual summer music festival with multiple stages and food vendors.</p>
-                
-                <div class="bg-gray-100 rounded-lg p-3 mb-4">
-                  <div class="flex items-center mb-3">
-                    <div class="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
-                      <i class="fa fa-user"></i>
-                    </div>
-                    <div class="ml-2">
-                      <p class="text-sm font-medium">Mike Thompson</p>
-                      <p class="text-xs text-gray-500">mike@example.com</p>
-                    </div>
-                  </div>
-                  
-                  <div class="flex items-center text-xs">
-                    <i class="fa fa-calendar text-primary mr-2"></i>
-                    <span>Jul 15-17, 2023</span>
-                  </div>
-                  <div class="flex items-center text-xs mt-1">
-                    <i class="fa fa-map-marker text-primary mr-2"></i>
-                    <span>Central Park, New York</span>
-                  </div>
-                </div>
-                
-                <div class="flex justify-between">
-                  <button class="flex-1 bg-primary/10 text-primary px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
-                    <i class="fa fa-edit mr-1"></i> Edit
-                  </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors ml-2">
-                    <i class="fa fa-trash mr-1"></i> Delete
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+ 
+        
+   
+ 
+  
           
           <!-- 事件表格 -->
           <div class="card overflow-hidden mt-6">
