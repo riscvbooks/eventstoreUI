@@ -74,6 +74,24 @@ export async function get_permissions(callback){
       });      
 }
 
+export async function add_permission(data,adminpubkey,adminprivkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+    
+    "ops": "C",
+    "code": 300,
+  }
+  event.data = data;  
+  event.user = adminpubkey;
+
+  client.publish(secureEvent(event,adminprivkey),function(message){
+
+      if (message[2] != "EOSE") callback(message[2]);
+      
+  });      
+}
+
 export async function delete_user(user,adminpubkey,adminprivkey,callback){
   await client.connect().catch(error => {});
 

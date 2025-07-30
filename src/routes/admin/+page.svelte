@@ -4,6 +4,7 @@
   import {create_user,get_events,
     get_users,
     get_permissions,
+    add_permission,
     delete_user
   } from '$lib/esclient';
  
@@ -12,6 +13,9 @@
   import {getColorClass,getUserName} from "$lib/users";
   import {getPerm } from "$lib/permissions";
   import {selectRandomIcon} from "$lib/events";
+
+  import EditDialog from "$lib/editdialog.svelte";
+  import {PERMISSIONS} from "eventstore-tools/src/common";
 
   import {    
     generateSecretKey,
@@ -40,6 +44,12 @@
   let showToast = false;
   let toastMessage = '';
   let toastType = 'success'; // success, error, warning, info
+
+
+  let isOpenEditDialog=false;
+  let eventData;
+  
+  
 
   const showToastMessage = (message, type = 'success') => {
     toastMessage = message;
@@ -90,6 +100,40 @@
       }
     });
   }
+
+  let saveCb = ()=>{} ;
+  function saveEvent (data){
+    
+    saveCb(data);
+  }
+  function addPermission(pubkey){
+    console.log(isOpenEditDialog)
+    eventData = JSON.stringify({
+      "userId": pubkey,
+      "permissionValue":PERMISSIONS.CREATE_EVENTS|PERMISSIONS.UPLOAD_FILES,
+    })
+
+    saveCb = (data) =>  {
+      let adminpubkey = Keypub;
+      let adminprivkey = Keypriv;
+       
+      add_permission(JSON.parse(eventData),Keypub,Keypriv,function(message){
+        showToastMessage(message.message);
+        if (message.code == 200){
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+        }
+      });
+    }
+    isOpenEditDialog = true;
+  }
+
+ function closeDialog(){
+  eventData = "";
+  saveCb = ()=>{};
+  isOpenEditDialog = false;
+ }
 
   const generateKey = () => {
     // 实际项目中应该使用加密库生成私钥
@@ -721,12 +765,10 @@
                     <td class="px-6 py-4">
                       <span class="role-badge bg-primary/10 text-primary">{getPerm(permissions,user.pubkey)}</span>
                     </td>
-                    <!--td class="px-6 py-4">
-                      <span class="status-badge bg-success/10 text-success">Active</span>
-                    </td-->
+ 
                     <td class="px-6 py-4 text-right">
                       <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" on:click={addPermission(user.pubkey)}>
                           <i class="fa fa-pencil"></i>
                         </button>
                         <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteUser(user.pubkey)}>
@@ -1270,3 +1312,22 @@
   </div>
   
 {/if} 
+
+
+
+  <EditDialog 
+    isOpenEditDialog = {isOpenEditDialog} 
+    {eventData}
+    onClose = {closeDialog} 
+    onOK={saveEvent}
+  >
+    <!-- 设置标题 -->
+    <svelte:fragment slot="textarea">
+        <textarea 
+            id="eventText" 
+            bind:value={eventData}
+            rows="7"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"          
+        ></textarea>
+    </svelte:fragment>
+  </EditDialog>
