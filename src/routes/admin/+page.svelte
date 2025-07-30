@@ -5,7 +5,8 @@
     get_users,
     get_permissions,
     add_permission,
-    delete_user
+    delete_user,
+    delete_event,
   } from '$lib/esclient';
  
   import {WebStorage} from '$lib/WebStorage'
@@ -91,6 +92,20 @@
     let adminpubkey = Keypub;
     let adminprivkey = Keypriv;
     delete_user(pubkey,adminpubkey,adminprivkey,function(message) {
+      
+      showToastMessage(message.message);
+      if (message.code == 200){
+          setTimeout(() => {
+             window.location.reload();
+          }, 1000);
+      }
+    });
+  }
+
+    function deleteEvent (EventId){
+    let adminpubkey = Keypub;
+    let adminprivkey = Keypriv;
+    delete_event(EventId,adminpubkey,adminprivkey,function(message) {
       
       showToastMessage(message.message);
       if (message.code == 200){
@@ -271,7 +286,7 @@
       document.getElementById('adminContent').classList.remove('hidden');
     }
 
-    await get_events(handle_events);
+    await get_events(Keypub,Keypriv,handle_events);
 
     await get_users(handle_users);
 
@@ -875,7 +890,8 @@
                       <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
                       <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
                       <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>                  
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+                      <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>                     
                       <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -906,6 +922,9 @@
                         <div class="text-sm text-gray-900">{event.servertimestamp.split("T")[0]}</div>
                         <div class="text-sm text-gray-500">{event.servertimestamp.split("T")[1]}</div>
                       </td>
+                      <td class="px-6 py-4">
+                         {event.status !=1 ? "open":"hidded"}
+                      </td>
                    
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
@@ -915,7 +934,7 @@
                           <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors">
                             <i class="fa fa-check"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteEvent(event.id)}>
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>

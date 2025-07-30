@@ -31,14 +31,17 @@ export async function create_user(email,pubkey,privkey,callback){
     });  
 }
 
-export async function get_events(callback){
+export async function get_events(pubkey,privkey,callback){
     await client.connect().catch(error => {});
 
     let event = {    
         "ops": "R",
         "code": 203,
+        "user": pubkey,
+        "status":0,
+        "eventcode":0,
       }
-      client.subscribe(event,function(message){
+      client.subscribe(secureEvent(event,privkey),function(message){
          
         if (message[2] == "EOSE") client.unsubscribe(message[1]);
         else callback(message[2])
@@ -101,6 +104,20 @@ export async function delete_user(user,adminpubkey,adminprivkey,callback){
   }
   event.user = adminpubkey;
   event.data = {pubkey:user}
+  client.publish(secureEvent(event,adminprivkey),function(message){     
+        if (message[2] != "EOSE") callback(message[2])
+  }); 
+}
+
+export async function delete_event(eventid,adminpubkey,adminprivkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {    
+    "ops": "D",
+    "code": 202,
+  }
+  event.user = adminpubkey;
+  event.data = {eventid:eventid}
   client.publish(secureEvent(event,adminprivkey),function(message){     
         if (message[2] != "EOSE") callback(message[2])
   }); 
