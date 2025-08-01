@@ -9,8 +9,7 @@
     let editedEvent = { ...eventData };
 
     const handleClose = () => {
-         
-         
+                  
         if (onClose) {
             onClose();
         }
