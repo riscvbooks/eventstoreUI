@@ -304,12 +304,7 @@
  
   
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%);
-      min-height: 100vh;
-      transition: all 0.3s ease;
-    }
+
     
     ::-webkit-scrollbar {
       width: 8px;
@@ -480,7 +475,7 @@
         
         <div class="flex items-center space-x-4">
           <div class="relative">
-            <button id="notificationBtn" class="p-2 rounded-full hover:bg-white/10 transition-colors text-white">
+            <button id="notificationBtn" class="p-2 rounded-full hover:bg-white/10 transition-colors text-white" aria-label="b">
               <i class="fa fa-bell-o"></i>
               <span class="absolute top-1 right-1 w-2.5 h-2.5 bg-danger rounded-full border border-white"></span>
             </button>
@@ -499,14 +494,14 @@
             </button>
             
             <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl py-1 hidden z-50 overflow-hidden">
-              <a href="#" id="profileLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+              <a href="#a" id="profileLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
                 <i class="fa fa-user mr-3 text-primary"></i>Profile
               </a>
-              <a href="#" id="settingsLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
+              <a href="#b" id="settingsLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center">
                 <i class="fa fa-cog mr-3 text-primary"></i>Settings
               </a>
               <div class="border-t border-gray-100 my-1"></div>
-              <a href="#" id="logoutLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center" on:click={Logout}>
+              <a href="#c" id="logoutLink" class="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center" on:click={Logout}>
                 <i class="fa fa-sign-out mr-3 text-danger"></i>Logout
               </a>
             </div>
@@ -783,10 +778,10 @@
  
                     <td class="px-6 py-4 text-right">
                       <div class="flex justify-end space-x-2">
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" on:click={addPermission(user.pubkey)}>
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" on:click={addPermission(user.pubkey)} aria-label="b">
                           <i class="fa fa-pencil"></i>
                         </button>
-                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteUser(user.pubkey)}>
+                        <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteUser(user.pubkey)} aria-label="b">
                           <i class="fa fa-trash-o"></i>
                         </button>
                       </div>
@@ -807,21 +802,21 @@
                 </p>
               </div>
               <div class="flex items-center space-x-2">
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="b">
                   Previous
                 </button>
                 
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium" aria-label="b">
                   1
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="b">
                   2
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="b">
                   3
                 </button>
                 
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="b">
                   Next
                 </button>
               </div>
@@ -864,10 +859,10 @@
               </div>
               
               <div class="flex space-x-3">
-                <button class="bg-white text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center border border-gray-300">
+                <button class="bg-white text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center border border-gray-300" aria-label="b">
                   <i class="fa fa-calendar mr-2"></i> Date Range
                 </button>
-                <button class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center shadow-md hover:shadow-lg">
+                <button class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center shadow-md hover:shadow-lg" aria-label="b">
                   <i class="fa fa-plus mr-2"></i> New Event
                 </button>
               </div>
@@ -928,13 +923,13 @@
                    
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" aria-label="b">
                             <i class="fa fa-eye"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-100 transition-colors" aria-label="b">
                             <i class="fa fa-check"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteEvent(event.id)}>
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" on:click={deleteEvent(event.id)} aria-label="b">
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>
@@ -958,21 +953,21 @@
                 </p>
               </div>
               <div class="flex items-center space-x-2">
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="page">
                   Previous
                 </button>
                 
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium" aria-label="page">
                   1
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="page">
                   2
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium">
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="page">
                   3
                 </button>
                 
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="next">
                   Next
                 </button>
               </div>
@@ -1013,10 +1008,10 @@
               </div>
               
               <div class="flex space-x-3">
-                <button class="bg-white text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center border border-gray-300">
+                <button class="bg-white text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center border border-gray-300" aria-label="filter">
                   <i class="fa fa-filter mr-2"></i> Filter
                 </button>
-                <button class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center shadow-md hover:shadow-lg">
+                <button class="bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center shadow-md hover:shadow-lg" aria-label="add">
                   <i class="fa fa-plus mr-2"></i> Add Permission
                 </button>
               </div>
@@ -1062,10 +1057,10 @@
                 </div>
                 
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-primary/10 text-primary px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors">
+                  <button class="flex-1 bg-primary/10 text-primary px-3 py-2 rounded-lg text-sm font-medium hover:bg-primary/20 transition-colors" aria-label="edit">
                     Edit
                   </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors" aria-label="views">
                     View Users
                   </button>
                 </div>
@@ -1109,10 +1104,10 @@
                 </div>
                 
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-secondary/10 text-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-secondary/20 transition-colors">
+                  <button class="flex-1 bg-secondary/10 text-secondary px-3 py-2 rounded-lg text-sm font-medium hover:bg-secondary/20 transition-colors" aria-label="edit">
                     Edit
                   </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors" aria-label="views">
                     View Users
                   </button>
                 </div>
@@ -1156,10 +1151,10 @@
                 </div>
                 
                 <div class="mt-4 flex space-x-2">
-                  <button class="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors">
+                  <button class="flex-1 bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors" aria-label="edit">
                     Edit
                   </button>
-                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
+                  <button class="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors" aria-label="views">
                     View Users
                   </button>
                 </div>
@@ -1200,11 +1195,11 @@
                         <span class="status-badge bg-green-100 text-green-800">Active</span>
                       </td>
                       <td class="px-6 py-4 text-right">
-                        <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                        <div class="flex justify-end space-x-2"> 
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" aria-label="修改">
                             <i class="fa fa-pencil"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" aria-label="删除">
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>
@@ -1229,10 +1224,10 @@
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" aria-label="修改">
                             <i class="fa fa-pencil"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" aria-label="删除">
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>
@@ -1258,10 +1253,10 @@
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" aria-label="修改">
                             <i class="fa fa-pencil"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" aria-label="删除">
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>
@@ -1286,10 +1281,10 @@
                       </td>
                       <td class="px-6 py-4 text-right">
                         <div class="flex justify-end space-x-2">
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-primary hover:bg-primary/10 transition-colors" aria-label="修改">
                             <i class="fa fa-pencil"></i>
                           </button>
-                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors">
+                          <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-100 transition-colors" aria-label="删除">
                             <i class="fa fa-trash-o"></i>
                           </button>
                         </div>
