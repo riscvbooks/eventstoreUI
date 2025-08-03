@@ -14,6 +14,8 @@
   export let dragOverPosition;
   export let onSetDraggedItem; // 父组件回调：更新draggedItem
   export let onSetDragOver;    // 父组件回调：更新dragOver状态
+ 
+
   import NestedTree from './NestedTree.svelte';
   import { afterUpdate } from 'svelte'; 
 
@@ -234,6 +236,7 @@
           dragOverPosition={dragOverPosition}
           onSetDraggedItem={onSetDraggedItem}
           onSetDragOver={onSetDragOver}
+ 
         />
       </div>
     {/if}

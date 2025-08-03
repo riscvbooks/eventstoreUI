@@ -326,6 +326,54 @@
     }
   }
 
+  function handleRename(item) {
+    // 提示用户输入新名称
+    const newTitle = prompt('请输入新名称', item.title);
+    if (!newTitle || newTitle.trim() === '') return; // 取消或空输入不处理
+
+    // 创建深拷贝避免直接修改源数据
+    const updatedOutline = JSON.parse(JSON.stringify(initialOutline));
+    // 查找并更新对应项的标题
+    const itemToUpdate = findItemById(updatedOutline, item.id);
+    if (itemToUpdate) {
+      itemToUpdate.title = newTitle.trim();
+      initialOutline = updatedOutline; // 更新响应式数据
+      saveOutline(); // 保存到本地存储
+      updateStats(); // 更新统计信息
+    }
+  }
+
+  // 删除章节/文件夹
+  function handleDelete(item) {
+    // 禁止删除前言
+    if (item.id === 1) {
+      alert('前言章节不能删除');
+      return;
+    }
+
+    if (!confirm(`确定要删除"${item.title}"吗？`)) return;
+
+    // 创建深拷贝
+    const updatedOutline = JSON.parse(JSON.stringify(initialOutline));
+    // 查找父级并移除当前项
+    const { parent, index } = findItemParentAndIndex(updatedOutline, item.id);
+    if (parent && index !== -1) {
+      parent.splice(index, 1); // 从父级数组中删除
+      initialOutline = updatedOutline; // 更新响应式数据
+      saveOutline(); // 保存到本地存储
+      updateStats(); // 更新统计信息
+
+      // 如果删除的是当前编辑项，重置编辑器
+      if (globalClickId === item.id) {
+        globalClickId = null;
+        const currentChapterTitle = document.getElementById('currentChapterTitle');
+        if (currentChapterTitle) currentChapterTitle.textContent = '选择大纲项进行编辑';
+        const simplemde = window.SimpleMDEInstances?.[0]; // 假设编辑器实例可访问
+        if (simplemde) simplemde.value('');
+      }
+    }
+  }
+
   onMount(async () => {
     // 加载CodeMirror库
     await Promise.all([
@@ -608,6 +656,8 @@
           onSetDraggedItem={setDraggedItem} 
           onSetDragOver={setDragOverState} 
           onDragEnd={handleDragEnd}
+          onRename={handleRename}   
+          onDelete={handleDelete}   
         />
       </div>
     </div>
