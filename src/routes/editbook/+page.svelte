@@ -586,7 +586,7 @@
             class="btn btn-primary flex items-center" 
             on:click={submitOutline}
           >
-            <i class="fa fa-up mr-2"></i>上传大纲
+            <i class="fa fa-arrow-up mr-2"></i>上传大纲
           </button>
 
             <button id="addFolder" class="folder-bg text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover " on:click={addFolder}>
