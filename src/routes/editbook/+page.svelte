@@ -393,6 +393,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: relative;
+      overflow: visible; /* 关键修改 - 允许内容溢出 */
     }
     .outline-item:hover {
       background-color: #f9fafb;
@@ -432,22 +434,34 @@
       cursor: pointer;
       position: relative;
     }
+    .action-menu-container {
+        position: relative;
+        z-index: 1;
+    }
+
+    /* 操作菜单使用固定定位避免被裁剪 */
     .action-menu {
-      position: absolute;
-      right: 0;
-      top: 1.5rem;
-      background-color: white;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      border-radius: 0.5rem;
-      padding: 0.5rem 0;
-      z-index: 10;
-      width: 8rem;
-      display: none;
-      border: 1px solid #E5E7EB;
+        position: fixed;
+        z-index: 1000;
+        background-color: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border-radius: 0.5rem;
+        padding: 0.5rem 0;
+        width: 8rem;
+        display: none;
+        border: 1px solid #E5E7EB;
+        transform: translate(0, 0); /* 确保平滑过渡 */
+        transition: opacity 0.2s ease, transform 0.2s ease;
     }
+
     .action-menu.show {
-      display: block;
+        display: block;
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+        animation: fadeIn 0.2s ease;
     }
+
     .menu-item {
       padding: 0.5rem 1rem;
       font-size: 0.875rem;
@@ -562,8 +576,9 @@
 
 
     .outline-tree-container {
-      overflow: visible; /* 避免子项拖动时被裁剪 */
+      overflow: visible !important;  /* 避免子项拖动时被裁剪 */
       pointer-events: auto; /* 确保容器可接收事件 */
+      contain: none; /* 防止contain属性限制布局 */
     }
   }
 </style>
