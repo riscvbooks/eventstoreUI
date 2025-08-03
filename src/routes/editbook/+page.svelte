@@ -120,6 +120,40 @@
     }
   ];
 
+  let nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+  
+  // 添加新文件夹
+  function addFolder() {
+    const newFolder = {
+      id: nextId++,
+      title: "新建文件夹",
+      type: "folder",
+      expanded: true,
+      children: []
+    };
+    
+    // 添加到大纲中
+    initialOutline = [...initialOutline, newFolder];
+    
+ 
+  }
+  
+  // 添加新章节
+  function addChapter() {
+    const newChapter = {
+      id: nextId++,
+      title: "新建章节",
+      content: "# 新建章节\n\n在这里开始编写您的内容...",
+      type: "chapter"
+    };
+    
+    // 添加到大纲中
+    initialOutline = [...initialOutline, newChapter];
+    
+ 
+  }
+  
+
   // 父组件中更新拖动处理函数
   function handleDragEnd(draggedItem, targetItem, position) {
     // 创建数据的深拷贝，确保触发响应式更新
@@ -526,24 +560,7 @@
       color: #5e0ce5;
     }
 
-    .icon-with-plus {
-      position: relative;
-      display: inline-block;
-    }
-    .icon-with-plus::after {
-      content: "+";
-      position: absolute;
-      top: -8px;
-      left: -12px;
-      width: 14px;
-      height: 14px; 
-      border-radius: 50%;
-      font-size: 14px;
-      line-height: 14px;
-      text-align: center;
-      font-weight: bold;
-      box-shadow: 0 0 2px rgba(0,0,0,0.3);
-    }
+
     .outline-tree-container {
       overflow: visible; /* 避免子项拖动时被裁剪 */
       pointer-events: auto; /* 确保容器可接收事件 */
@@ -603,14 +620,15 @@
           <h2 class="text-xl font-semibold text-primary flex items-center">
             <i class="fa fa-sitemap mr-2"></i>书籍大纲
           </h2>
-          <div class="flex gap-2">
-            <button id="addFolder" class="folder-bg text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover">
-              <i class="fa fa-folder icon-with-plus"></i>
+            <!-- 按钮部分的修改 -->
+            <div class="flex gap-2">
+            <button id="addFolder" class="folder-bg text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover " on:click={addFolder}>
+                <i class="fas fa-folder-plus"></i>
             </button>
-            <button id="addChapter" class="bg-primary hover:bg-indigo-700 text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover">
-              <i class="fa fa-file-text icon-with-plus"></i>
+            <button id="addChapter" class="bg-primary hover:bg-indigo-700 text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover " on:click={addChapter}>
+                <i class="fas fa-file-circle-plus"></i>
             </button>
-          </div>
+            </div>
         </div>
         
         <NestedTree 
