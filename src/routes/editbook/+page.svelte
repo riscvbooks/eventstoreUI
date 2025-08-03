@@ -2,7 +2,6 @@
   import { onMount } from 'svelte';
   import NestedTree from '$lib/NestedTree.svelte';
 
-
   // 封面的显示和隐藏
   let coverdir = "down";
   let hiddencover = "hidden";
@@ -12,6 +11,12 @@
   let draggedItem = null;
   let dragOverItem = null;
   let dragOverPosition = null;
+
+  // 原始大纲编辑模态框状态
+  let showRawOutlineModal = false;
+  let rawOutlineContent = '';
+  let jsonFormatError = '';
+  let codeMirrorEditor = null; // CodeMirror编辑器实例
 
   // 封面隐藏显示函数
   function togglecover() {
@@ -131,11 +136,8 @@
       expanded: true,
       children: []
     };
-    
-    // 添加到大纲中
     initialOutline = [...initialOutline, newFolder];
-    
- 
+    saveOutline();
   }
   
   // 添加新章节
@@ -146,49 +148,35 @@
       content: "# 新建章节\n\n在这里开始编写您的内容...",
       type: "chapter"
     };
-    
-    // 添加到大纲中
     initialOutline = [...initialOutline, newChapter];
-    
- 
+    saveOutline();
   }
   
 
   // 父组件中更新拖动处理函数
   function handleDragEnd(draggedItem, targetItem, position) {
-    // 创建数据的深拷贝，确保触发响应式更新
     const updatedOutline = JSON.parse(JSON.stringify(initialOutline));
-    
-    // 1. 找到拖动项在原数据中的位置并移除
     const { parent: draggedParent, index: draggedIndex } = findItemParentAndIndex(updatedOutline, draggedItem.id);
 
-    // 从原位置移除
     const [removedItem] = draggedParent.splice(draggedIndex, 1);
-    
-    // 2. 找到目标位置并插入
     const { parent: targetParent, index: targetIndex } = findItemParentAndIndex(updatedOutline, targetItem.id);
  
-    if (!draggedParent || draggedIndex === -1) return;
-    if (!targetParent) return;
+    if (!draggedParent || draggedIndex === -1 || !targetParent) return;
 
-    // 根据位置插入
     if (position === 'inside' && targetItem.type === 'folder') {
-      // 找到目标文件夹
       const targetFolder = findItemById(updatedOutline, targetItem.id);
       if (targetFolder) {
         if (!targetFolder.children) targetFolder.children = [];
         targetFolder.children.push(removedItem);
-        targetFolder.expanded = true; // 确保文件夹展开
+        targetFolder.expanded = true;
       }
     } else {
-      // 计算插入位置
       const insertIndex = position === 'before' ? targetIndex : targetIndex + 1;
       targetParent.splice(insertIndex, 0, removedItem);
     }
     
-    // 3. 更新数据并触发重新渲染
     initialOutline = updatedOutline;
-    console.log(initialOutline)
+    saveOutline();
   }
 
   // 辅助函数：查找项目
@@ -221,28 +209,175 @@
     return { parent: null, index: -1 };
   }
 
+  // 打开原始大纲编辑模态框
+  function openRawOutlineEditor() {
+    try {
+      // 格式化JSON以便阅读和编辑
+      rawOutlineContent = JSON.stringify(initialOutline, null, 2);
+      jsonFormatError = '';
+      showRawOutlineModal = true;
+      
+      // 等待模态框渲染完成后初始化CodeMirror
+      setTimeout(initCodeMirrorEditor, 100);
+    } catch (error) {
+      jsonFormatError = '无法加载大纲数据: ' + error.message;
+      showRawOutlineModal = true;
+    }
+  }
+
+  // 初始化CodeMirror编辑器（带行号功能）
+  function initCodeMirrorEditor() {
+    const textarea = document.getElementById('json-editor');
+    if (!textarea || codeMirrorEditor) return;
+
+    // 初始化CodeMirror编辑器
+    codeMirrorEditor = CodeMirror.fromTextArea(textarea, {
+      lineNumbers: true,          // 显示行号
+      mode: 'application/json',   // JSON语法高亮
+      indentUnit: 2,              // 缩进单位
+      indentWithTabs: false,      // 使用空格缩进
+      lineWrapping: true,         // 自动换行
+      matchBrackets: true,        // 括号匹配高亮
+      autoCloseBrackets: true,    // 自动闭合括号
+      theme: 'default',           // 默认主题
+      viewportMargin: Infinity    // 适应容器高度
+    });
+
+    // 设置初始内容
+    codeMirrorEditor.setValue(rawOutlineContent);
+    
+    // 监听内容变化，同步到文本框
+    codeMirrorEditor.on('change', () => {
+      rawOutlineContent = codeMirrorEditor.getValue();
+    });
+  }
+
+  // 销毁CodeMirror编辑器实例
+  function destroyCodeMirrorEditor() {
+    if (codeMirrorEditor) {
+      codeMirrorEditor.toTextArea(); // 还原为普通文本框
+      codeMirrorEditor = null;
+    }
+  }
+
+  // 验证并应用原始大纲修改
+  function applyRawOutlineChanges() {
+    try {
+      // 从编辑器获取最新内容
+      const content = codeMirrorEditor ? codeMirrorEditor.getValue() : rawOutlineContent;
+      
+      // 验证JSON格式
+      const parsed = JSON.parse(content);
+      
+      // 简单结构验证
+      if (!Array.isArray(parsed)) {
+        throw new Error('大纲必须是数组格式');
+      }
+      
+      // 检查是否包含必要字段
+      parsed.forEach(item => {
+        if (!item.id || !item.title || !item.type) {
+          throw new Error(`项目 "${item.title || '未知项目'}" 缺少必要字段(id/title/type)`);
+        }
+        if (item.type === 'folder' && item.children && !Array.isArray(item.children)) {
+          throw new Error(`文件夹 "${item.title}" 的children必须是数组`);
+        }
+      });
+      
+      // 应用修改
+      initialOutline = parsed;
+      nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+      jsonFormatError = '';
+      showRawOutlineModal = false;
+      destroyCodeMirrorEditor(); // 关闭时销毁编辑器
+      saveOutline();
+      showNotification('大纲已更新');
+    } catch (error) {
+      jsonFormatError = '格式错误: ' + error.message;
+      // 显示错误行号（如果有）
+      if (error.message.includes('at position')) {
+        const positionMatch = error.message.match(/at position (\d+)/);
+        if (positionMatch && positionMatch[1]) {
+          const pos = parseInt(positionMatch[1]);
+          // 尝试定位到错误位置
+          if (codeMirrorEditor) {
+            const doc = codeMirrorEditor.getDoc();
+            const line = doc.posFromIndex(pos).line + 1; // 转换为行号（+1是因为行号从1开始）
+            jsonFormatError += `，大约在第 ${line} 行`;
+          }
+        }
+      }
+      // 滚动到错误提示
+      setTimeout(() => {
+        document.querySelector('.error-message')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }
+
+  // 导出大纲为JSON文件
+  function submitOutline() {
+    try {
+      const dataStr = JSON.stringify(initialOutline, null, 2);
+ 
+ 
+    } catch (error) {
+      showNotification('导出失败: ' + error.message, 'error');
+    }
+  }
+
   onMount(async () => {
+    // 加载CodeMirror库
+    await Promise.all([
+      new Promise(resolve => {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css';
+        link.onload = resolve;
+        document.head.appendChild(link);
+      }),
+      new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js';
+        script.onload = resolve;
+        document.body.appendChild(script);
+      }),
+      new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js';
+        script.onload = resolve;
+        document.body.appendChild(script);
+      })
+    ]);
+
+    // 尝试从本地存储加载大纲
+    const savedOutline = localStorage.getItem('bookOutline');
+    if (savedOutline) {
+      try {
+        initialOutline = JSON.parse(savedOutline);
+        nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+      } catch (error) {
+        console.error('Failed to load saved outline:', error);
+        showNotification('加载保存的大纲失败，使用默认大纲', 'warning');
+      }
+    }
+
     function loadSimpleMDE(callback) {
-      // 检查是否已加载SimpleMDE
       if (window.SimpleMDE) {
         callback();
         return;
       }
       
-      // 加载CSS
       const cssLink = document.createElement('link');
       cssLink.href = 'https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.css';
       cssLink.rel = 'stylesheet';
       document.head.appendChild(cssLink);
       
-      // 加载JS
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/simplemde@1.11.2/dist/simplemde.min.js';
       script.onload = callback;
       document.body.appendChild(script);
     }
 
-    // 初始化SimpleMDE编辑器
     function initEditor() {
       const editorElement = document.getElementById('editor');
       if (!editorElement) return;
@@ -259,7 +394,6 @@
         toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"]
       });
       
-      // 监听编辑器变化
       simplemde.codemirror.on("change", function() {
         if (currentEditId !== null) {
           const chapter = findChapter(currentEditId);
@@ -275,38 +409,28 @@
       return simplemde;
     }
 
-    // 保存大纲到本地存储
     function saveOutline() {
       localStorage.setItem('bookOutline', JSON.stringify(initialOutline));
       const lastSaved = document.getElementById('lastSaved');
       if (lastSaved) {
         lastSaved.textContent = `已保存: ${new Date().toLocaleTimeString()}`;
       }
-      
-      // 显示保存通知
-      showNotification('大纲已保存');
     }
 
-    // 显示通知
-    function showNotification(message) {
+    function showNotification(message, type = 'success') {
       const notification = document.createElement('div');
-      notification.className = 'fixed bottom-4 right-4 bg-primary text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-20 opacity-0';
+      const bgColor = type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-primary';
+      notification.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-20 opacity-0`;
       notification.textContent = message;
       document.body.appendChild(notification);
       
-      setTimeout(() => {
-        notification.classList.remove('translate-y-20', 'opacity-0');
-      }, 100);
-      
+      setTimeout(() => notification.classList.remove('translate-y-20', 'opacity-0'), 100);
       setTimeout(() => {
         notification.classList.add('translate-y-20', 'opacity-0');
-        setTimeout(() => {
-          document.body.removeChild(notification);
-        }, 300);
+        setTimeout(() => document.body.removeChild(notification), 300);
       }, 2000);
     }
 
-    // 查找章节
     function findChapter(id, items = initialOutline) {
       for (const item of items) {
         if (item.id === id) return item;
@@ -318,7 +442,6 @@
       return null;
     }
 
-    // 更新字数统计
     function updateWordCount(simplemde) {
       const wordCountEl = document.getElementById('wordCount');
       if (!wordCountEl || !simplemde) {
@@ -326,13 +449,11 @@
         return;
       }
       
-      // 简单计算字数
-      const text = simplemde.value().replace(/<[^>]*>/g, ''); // 移除HTML标签
+      const text = simplemde.value().replace(/<[^>]*>/g, '');
       const count = text.length;
       wordCountEl.textContent = `${count} 字`;
     }
 
-    // 更新统计信息
     function updateStats() {
       let chapterCount = 0;
       let wordCount = 0;
@@ -344,9 +465,7 @@
             const text = item.content ? item.content.replace(/<[^>]*>/g, '') : '';
             wordCount += text.length;
           }
-          if (item.children) {
-            countItems(item.children);
-          }
+          if (item.children) countItems(item.children);
         });
       }
       
@@ -358,7 +477,6 @@
       if (totalWordsEl) totalWordsEl.textContent = wordCount;
     }
 
-    // 初始化应用
     let simplemde = null;
     let currentEditId = null;
     
@@ -366,7 +484,6 @@
       simplemde = initEditor();
       updateStats();
       
-      // 设置初始编辑
       if (initialOutline.length > 0 && initialOutline[0].type === 'chapter') {
         currentEditId = initialOutline[0].id;
         const currentChapterTitle = document.getElementById('currentChapterTitle');
@@ -380,7 +497,17 @@
         }
       }
     });
+
+    // 清理函数
+    return () => {
+      destroyCodeMirrorEditor();
+    };
   });
+
+  // 当模态框关闭时销毁编辑器
+  $: if (!showRawOutlineModal && codeMirrorEditor) {
+    destroyCodeMirrorEditor();
+  }
 </script> 
 
 <style>
@@ -394,7 +521,7 @@
       align-items: center;
       justify-content: space-between;
       position: relative;
-      overflow: visible; /* 关键修改 - 允许内容溢出 */
+      overflow: visible;
     }
     .outline-item:hover {
       background-color: #f9fafb;
@@ -439,7 +566,6 @@
         z-index: 1;
     }
 
-    /* 操作菜单使用固定定位避免被裁剪 */
     .action-menu {
         position: fixed;
         z-index: 1000;
@@ -451,7 +577,7 @@
         width: 8rem;
         display: none;
         border: 1px solid #E5E7EB;
-        transform: translate(0, 0); /* 确保平滑过渡 */
+        transform: translate(0, 0);
         transition: opacity 0.2s ease, transform 0.2s ease;
     }
 
@@ -519,7 +645,6 @@
       background: #a8a8a8;
     }
     
-    /* 自定义文件夹颜色类 */
     .folder-color {
       color: #7E22CE;
     }
@@ -574,11 +699,133 @@
       color: #5e0ce5;
     }
 
-
     .outline-tree-container {
-      overflow: visible !important;  /* 避免子项拖动时被裁剪 */
-      pointer-events: auto; /* 确保容器可接收事件 */
-      contain: none; /* 防止contain属性限制布局 */
+      overflow: visible !important;
+      pointer-events: auto;
+      contain: none;
+    }
+
+    /* 模态框样式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-content {
+      background-color: white;
+      border-radius: 0.75rem;
+      width: 100%;
+      max-width: 800px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1F2937;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #9CA3AF;
+      cursor: pointer;
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .modal-body {
+      padding: 1.5rem;
+      flex-grow: 1;
+      overflow-y: auto;
+    }
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid #E5E7EB;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+    .json-editor-container {
+      width: 100%;
+      border: 1px solid #E5E7EB;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    /* CodeMirror样式调整 */
+    .CodeMirror {
+      min-height: 300px;
+      font-family: monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      height: auto;
+    }
+    .CodeMirror-linenumber {
+      padding: 0 8px;
+      color: #9CA3AF;
+      background-color: #F9FAFB;
+    }
+    .CodeMirror-gutters {
+      border-right: 1px solid #E5E7EB;
+      background-color: #F9FAFB;
+    }
+    .CodeMirror-activeline-gutter .CodeMirror-linenumber {
+      background-color: rgba(79, 70, 229, 0.05);
+      color: #4F46E5;
+      font-weight: 500;
+    }
+    .error-message {
+      color: #EF4444;
+      margin-top: 0.5rem;
+      font-size: 0.875rem;
+      padding: 0.5rem;
+      background-color: #FEF2F2;
+      border-radius: 0.375rem;
+    }
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background-color: #4F46E5;
+      color: white;
+      border: none;
+    }
+    .btn-primary:hover {
+      background-color: #4338CA;
+    }
+    .btn-secondary {
+      background-color: #F3F4F6;
+      color: #1F2937;
+      border: none;
+    }
+    .btn-secondary:hover {
+      background-color: #E5E7EB;
+    }
+    .outline-actions-extra {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px dashed #E5E7EB;
+      display: flex;
+      gap: 0.75rem;
     }
   }
 </style>
@@ -635,15 +882,32 @@
           <h2 class="text-xl font-semibold text-primary flex items-center">
             <i class="fa fa-sitemap mr-2"></i>书籍大纲
           </h2>
-            <!-- 按钮部分的修改 -->
-            <div class="flex gap-2">
+          <div class="flex gap-2">
+
+          </div>
+        </div>
+        
+        <!-- 大纲操作按钮 -->
+        <div class="outline-actions-extra">
+          <button 
+            class="btn btn-secondary flex items-center" 
+            on:click={openRawOutlineEditor}
+          >
+            <i class="fa fa-code mr-2"></i>编辑大纲
+          </button>
+          <button 
+            class="btn btn-primary flex items-center" 
+            on:click={submitOutline}
+          >
+            <i class="fa fa-up mr-2"></i>上传大纲
+          </button>
+
             <button id="addFolder" class="folder-bg text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover " on:click={addFolder}>
                 <i class="fas fa-folder-plus"></i>
             </button>
             <button id="addChapter" class="bg-primary hover:bg-indigo-700 text-white rounded-lg w-9 h-9 flex items-center justify-center transition btn-hover " on:click={addChapter}>
                 <i class="fas fa-file-circle-plus"></i>
             </button>
-            </div>
         </div>
         
         <NestedTree 
@@ -709,6 +973,38 @@
     </div>
   </div>
 </main>
+
+<!-- 原始大纲编辑模态框 -->
+{#if showRawOutlineModal}
+  <div class="modal-overlay" on:click={() => showRawOutlineModal = false}>
+    <div class="modal-content" on:click|stopPropagation>
+      <div class="modal-header">
+        <h3 class="modal-title">编辑原始大纲 (JSON格式)</h3>
+        <button class="modal-close" on:click={() => showRawOutlineModal = false}>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-sm text-gray-500 mb-3">
+          您可以直接编辑大纲的JSON结构。编辑器已提供行号、语法高亮和括号匹配功能。
+        </p>
+        <!-- 隐藏的文本框，用于CodeMirror绑定 -->
+        <textarea id="json-editor" class="hidden" bind:value={rawOutlineContent}></textarea>
+        <!-- CodeMirror将在这里渲染 -->
+        <div class="json-editor-container"></div>
+        
+        {#if jsonFormatError}
+          <div class="error-message">{jsonFormatError}</div>
+        {/if}
+        <p class="text-xs text-gray-400 mt-3">
+          提示：每个项目需包含id、title和type字段；文件夹类型(folder)可包含children数组。
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" on:click={() => showRawOutlineModal = false}>取消</button>
+        <button class="btn btn-primary" on:click={applyRawOutlineChanges}>应用更改</button>
+      </div>
+    </div>
+  </div>
+{/if}
 
 <!-- 页脚 -->
 <footer class="bg-white border-t border-gray-200 py-4 mt-8">
