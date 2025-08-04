@@ -139,9 +139,25 @@ export async function upload_file(filename,fileData,pubkey,privkey,callback){
 
   const sevent = secureEvent(event,privkey);
   sevent.data.fileData = fileData;
-  console.log(sevent);
+ 
   client.publish(sevent,function(message){
     callback(message);
   });
 
+}
+
+export async function create_book(bookInfo,pubkey,privkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "C",
+      "code": 200,
+      "user": pubkey,
+      "data": bookInfo,
+      "tags":[ ['t','create_book'],['web','esbook']]
+    }
+  client.publish(secureEvent(event,privkey),function(message){
+      callback(message);
+  });  
 }

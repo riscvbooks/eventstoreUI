@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import NestedTree from '$lib/NestedTree.svelte';
   import "$lib/editbook.css";
-  import {upload_file} from "$lib/esclient";
+  import {upload_file,create_book} from "$lib/esclient";
   import {getKey} from "$lib/getkey";
 
   let Keypriv;
@@ -356,9 +356,24 @@
         return ;
     }
     let filename = `coverimg.png`;
-     
+    showNotification("正在上传封面"); 
     upload_file(filename,coverImgData,Keypub,Keypriv,function(message){
-        console.log(message);
+        if (message[2].code == 200){
+            showNotification(message[2].message+" 正在上传书籍信息"); 
+            let url = message[2].fileUrl;
+            let bookInfo = {
+                coverImgurl :url,
+                title:bookTitle,
+                author:bookAuthor
+            }
+            create_book(bookInfo,Keypub,Keypriv,function(msg){
+                console.log(msg);
+            })
+        } else {
+            showNotification("正在上传封面"); 
+        }
+        
+        
     })
   }
 
