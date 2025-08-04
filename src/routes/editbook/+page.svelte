@@ -6,7 +6,7 @@
   // 封面的显示和隐藏
   let coverdir = "down";
   let hiddencover = "hidden";
-  let coverImage = "";
+ 
  
   // 大纲的选中id号，用来显示大纲的样式渲染
   let globalClickId = null;
@@ -557,7 +557,6 @@
              
             e.preventDefault(); // 阻止默认粘贴行为
 
-          
             // 检查是否有粘贴的图片
             const items = e.clipboardData.items;
             if (items) {
@@ -579,6 +578,46 @@
         }
     });
 
+    const fileInput = document.getElementById('coverInputfile');
+    
+
+    // 监听文件选择事件
+    fileInput.addEventListener('change', function(e) {
+        // 检查是否选择了文件
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            
+            // 检查是否为图片文件
+            if (file.type.indexOf('image') !== -1) {
+                // 读取文件并显示
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const imgUrl = e.target.result;
+                    const bookCover = bookCoverContainer.querySelector('.book-cover');
+                    
+                    // 以相同方式显示图片
+                    bookCover.style.backgroundImage = `url(${imgUrl})`;
+                    bookCover.style.backgroundSize = 'cover';
+                    bookCover.style.backgroundPosition = 'center';
+                    bookCover.innerHTML = ''; // 清空原有文字
+                    
+                    // 显示提示
+                    showNotification('已上传图片作为封面');
+                };
+                
+                // 读取文件为DataURL
+                reader.readAsDataURL(file);
+            } else {
+                showNotification('请选择图片文件', 'error');
+            }
+        }
+    });
+
+    // 可选：重置文件输入，允许重复选择同一文件
+    fileInput.addEventListener('click', function() {
+        this.value = '';
+    });
 
     // 清理函数
     return () => {
@@ -622,22 +661,20 @@
         
         <div class="flex flex-col items-center {hiddencover}" >
           <div class="w-full max-w-xs h-64 mb-4" id="bookCoverContainer">
-           {#if !coverImage}
+            
             <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 mb-4 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl" >
                 <h3 class="text-2xl font-bold mb-2">点击上传封面</h3>
                 <p class="text-lg opacity-90">或者鼠标点击此处后</p>
                 <p class="mt-4 font-medium">粘贴截图</p>
             </div>
-            {:else}
-            <img src=""/>
-            {/if}
+  
 
           </div>  
           
           <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
             <label class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
               <i class="fa fa-upload mr-1"></i>上传封面
-              <input type="file" class="hidden">
+              <input type="file" class="hidden" id="coverInputfile">
             </label>
             <button class="bg-violet-500 hover:bg-violet-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center btn-hover text-sm">
               <i class="fa fa-paint-brush mr-1"></i>提交书籍信息
