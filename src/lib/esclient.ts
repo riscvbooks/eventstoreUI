@@ -161,3 +161,22 @@ export async function create_book(bookInfo,pubkey,privkey,callback){
       callback(message);
   });  
 }
+
+export async function get_books( callback){
+  
+  await client.connect().catch(error => {});
+  
+  if (client.connected == false) return ;
+
+  let event = {
+  
+      "ops": "R",
+      "code": 203,
+      "tags":[ ['t','create_book'],['web','esbook']]
+    }
+  client.subscribe(event,function(message){
+         
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      else callback(message[2])
+    }); 
+}
