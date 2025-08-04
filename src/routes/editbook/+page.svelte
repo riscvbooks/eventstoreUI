@@ -2,10 +2,18 @@
   import { onMount } from 'svelte';
   import NestedTree from '$lib/NestedTree.svelte';
   import "$lib/editbook.css";
+  import {upload_file} from "$lib/esclient";
+  import {getKey} from "$lib/getkey";
+
+  let Keypriv;
+  let Keypub;
 
   // 封面的显示和隐藏
   let coverdir = "down";
   let hiddencover = "hidden";
+  let coverImgData = "";
+  let bookTitle  = '';
+  let bookAuthor = '';
  
  
   // 大纲的选中id号，用来显示大纲的样式渲染
@@ -19,6 +27,21 @@
   let rawOutlineContent = '';
   let jsonFormatError = '';
   let codeMirrorEditor = null; // CodeMirror编辑器实例
+
+
+  function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      const bgColor = type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-primary';
+      notification.className = `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300   opacity-0`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => notification.classList.remove('translate-y-20', 'opacity-0'), 100);
+      setTimeout(() => {
+        notification.classList.add('translate-y-20', 'opacity-0');
+        setTimeout(() => document.body.removeChild(notification), 300);
+      }, 3000);
+  }
 
   // 封面隐藏显示函数
   function togglecover() {
@@ -326,6 +349,20 @@
       showNotification('导出失败: ' + error.message, 'error');
     }
   }
+ 
+  function submitBookInfo(){
+    if (!bookAuthor || !bookTitle || !coverImgData){
+        showNotification("请填写完整的:作者，标题，封面","error");
+        return ;
+    }
+    let filename = `coverimg.png`;
+     
+    upload_file(filename,coverImgData,Keypub,Keypriv,function(message){
+        console.log(message);
+    })
+  }
+
+
 
   function handleRename(item) {
     // 提示用户输入新名称
@@ -377,6 +414,15 @@
 
   onMount(async () => {
     // 加载CodeMirror库
+    let Key = getKey();
+    
+    Keypriv = Key.Keypriv;
+    Keypub = Key.Keypub;
+    if (!Keypriv){
+        showNotification("请先登录。","warning");
+        return ;
+    }
+    
     await Promise.all([
       new Promise(resolve => {
         const link = document.createElement('link');
@@ -452,19 +498,7 @@
 
  
 
-    function showNotification(message, type = 'success') {
-      const notification = document.createElement('div');
-      const bgColor = type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-primary';
-      notification.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-20 opacity-0`;
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      
-      setTimeout(() => notification.classList.remove('translate-y-20', 'opacity-0'), 100);
-      setTimeout(() => {
-        notification.classList.add('translate-y-20', 'opacity-0');
-        setTimeout(() => document.body.removeChild(notification), 300);
-      }, 2000);
-    }
+
 
     function findChapter(id, items = initialOutline) {
       for (const item of items) {
@@ -562,16 +596,36 @@
             if (items) {
                 for (let i = 0; i < items.length; i++) {
                     if (items[i].type.indexOf('image') !== -1) {
-                    const blob = items[i].getAsFile();
-                    // 处理图片 - 这里示例是显示在封面区域
-                    const imgUrl = URL.createObjectURL(blob);
-                    const bookCover = bookCoverContainer.querySelector('.book-cover');
-                    bookCover.style.backgroundImage = `url(${imgUrl})`;
-                    bookCover.style.backgroundSize = 'cover';
-                    bookCover.style.backgroundPosition = 'center';
-                    // 清空原有文字
-                    bookCover.innerHTML = '';
-                    showNotification('已粘贴图片作为封面');
+                        const blob = items[i].getAsFile();
+                        // 处理图片 - 这里示例是显示在封面区域
+                        const imgUrl = URL.createObjectURL(blob);
+                        const bookCover = bookCoverContainer.querySelector('.book-cover');
+                        bookCover.style.backgroundImage = `url(${imgUrl})`;
+                        bookCover.style.backgroundSize = 'cover';
+                        bookCover.style.backgroundPosition = 'center';
+                        // 清空原有文字
+                        bookCover.innerHTML = '';
+                        showNotification('已粘贴图片作为封面');
+
+                        
+                        // 2. 读取blob并转换为Uint8Array
+                        const reader = new FileReader();
+                        
+                        // 方法A：通过ArrayBuffer转换（推荐，更直接）
+                        reader.onload = function(event) {
+                            // event.target.result 是 ArrayBuffer
+                            const arrayBuffer = event.target.result;
+                             
+                            const uint8Array = new Uint8Array(arrayBuffer);
+                            
+                            coverImgData = uint8Array;
+                           
+                        };
+                        
+                        // 读取blob为ArrayBuffer（二进制原始数据）
+                        reader.readAsArrayBuffer(blob);
+
+    
                     }
                 }
             }
@@ -594,6 +648,20 @@
                 
                 reader.onload = function(e) {
                     const imgUrl = e.target.result;
+                    // 1. 提取Base64数据（去掉DataURL前缀）
+                    const base64Data = imgUrl.split(',')[1];
+                    
+                    // 2. 将Base64转换为Uint8Array（浏览器环境中的二进制数组，可类比Node.js的Buffer）
+                    const binaryString = window.atob(base64Data);
+                    const len = binaryString.length;
+                    const uint8Array = new Uint8Array(len);
+                    for (let i = 0; i < len; i++) {
+                        uint8Array[i] = binaryString.charCodeAt(i);
+                    }
+                    
+                    // 3. 此时uint8Array与Node.js的Buffer类型兼容（都是二进制数据）
+                    coverImgData = uint8Array;
+
                     const bookCover = bookCoverContainer.querySelector('.book-cover');
                     
                     // 以相同方式显示图片
@@ -676,7 +744,7 @@
               <i class="fa fa-upload mr-1"></i>上传封面
               <input type="file" class="hidden" id="coverInputfile">
             </label>
-            <button class="bg-violet-500 hover:bg-violet-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center btn-hover text-sm">
+            <button class="bg-violet-500 hover:bg-violet-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center btn-hover text-sm" on:click={submitBookInfo}>
               <i class="fa fa-paint-brush mr-1"></i>提交书籍信息
             </button>
           </div>
@@ -684,12 +752,12 @@
           <div class="space-y-3 w-full max-w-xs">
             <div>
               <label class="block text-sm font-medium mb-1">书籍标题</label>
-              <input type="text" placeholder="输入书籍标题" value="书籍创作指南" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              <input type="text" placeholder="输入书籍标题" bind:value={bookTitle} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
             </div>
 
             <div>
               <label class="block text-sm font-medium mb-1">作者</label>
-              <input type="text" placeholder="作者姓名" value="张三" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              <input type="text" placeholder="作者姓名" bind:value={bookAuthor} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
             </div>
           </div>
         </div>

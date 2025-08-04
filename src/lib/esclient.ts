@@ -122,3 +122,26 @@ export async function delete_event(eventid,adminpubkey,adminprivkey,callback){
         if (message[2] != "EOSE") callback(message[2])
   }); 
 }
+
+export async function upload_file(filename,fileData,pubkey,privkey,callback){
+  await client.connect().catch(error => {});
+
+   
+  const event = {
+    "ops": "C",
+    "code": 400,
+    "user": pubkey,
+    "data": {
+        fileName: filename,  // 生成一个临时文件名
+    },
+    "tags": [['t','upload_file']]
+  };
+
+  const sevent = secureEvent(event,privkey);
+  sevent.data.fileData = fileData;
+  console.log(sevent);
+  client.publish(sevent,function(message){
+    callback(message);
+  });
+
+}
