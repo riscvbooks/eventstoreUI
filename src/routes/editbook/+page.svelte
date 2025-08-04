@@ -6,6 +6,7 @@
   // 封面的显示和隐藏
   let coverdir = "down";
   let hiddencover = "hidden";
+  let coverImage = "";
  
   // 大纲的选中id号，用来显示大纲的样式渲染
   let globalClickId = null;
@@ -399,16 +400,7 @@
     ]);
 
     // 尝试从本地存储加载大纲
-    const savedOutline = localStorage.getItem('bookOutline');
-    if (savedOutline) {
-      try {
-        initialOutline = JSON.parse(savedOutline);
-        nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
-      } catch (error) {
-        console.error('Failed to load saved outline:', error);
-        showNotification('加载保存的大纲失败，使用默认大纲', 'warning');
-      }
-    }
+
 
     function loadSimpleMDE(callback) {
       if (window.SimpleMDE) {
@@ -448,7 +440,7 @@
           const chapter = findChapter(currentEditId);
           if (chapter) {
             chapter.content = simplemde.value();
-            saveOutline();
+            
             updateWordCount(simplemde);
             updateStats();
           }
@@ -458,13 +450,7 @@
       return simplemde;
     }
 
-    function saveOutline() {
-      localStorage.setItem('bookOutline', JSON.stringify(initialOutline));
-      const lastSaved = document.getElementById('lastSaved');
-      if (lastSaved) {
-        lastSaved.textContent = `已保存: ${new Date().toLocaleTimeString()}`;
-      }
-    }
+ 
 
     function showNotification(message, type = 'success') {
       const notification = document.createElement('div');
@@ -547,11 +533,60 @@
       }
     });
 
+
+    let moveInbookCoverContainer = false;
+    const bookCoverContainer = document.getElementById('bookCoverContainer');
+    bookCoverContainer.addEventListener('mouseenter', function() {
+         
+        moveInbookCoverContainer = true;
+           
+    });
+
+    // 鼠标离开容器时触发
+    bookCoverContainer.addEventListener('mouseleave', function() {    
+         
+        moveInbookCoverContainer = false;
+    });
+        
+    
+    // 监听整个文档的粘贴事件
+    document.addEventListener('paste', function(e) {
+       
+        // 检查粘贴事件是否发生在目标容器内
+        if (moveInbookCoverContainer) {
+             
+            e.preventDefault(); // 阻止默认粘贴行为
+
+          
+            // 检查是否有粘贴的图片
+            const items = e.clipboardData.items;
+            if (items) {
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    // 处理图片 - 这里示例是显示在封面区域
+                    const imgUrl = URL.createObjectURL(blob);
+                    const bookCover = bookCoverContainer.querySelector('.book-cover');
+                    bookCover.style.backgroundImage = `url(${imgUrl})`;
+                    bookCover.style.backgroundSize = 'cover';
+                    bookCover.style.backgroundPosition = 'center';
+                    // 清空原有文字
+                    bookCover.innerHTML = '';
+                    showNotification('已粘贴图片作为封面');
+                    }
+                }
+            }
+        }
+    });
+
+
     // 清理函数
     return () => {
       destroyCodeMirrorEditor();
     };
-  });
+
+
+  }); //onMount
 
   // 当模态框关闭时销毁编辑器
   $: if (!showRawOutlineModal && codeMirrorEditor) {
@@ -565,27 +600,39 @@
   }
 </style>
 
+<svelte:head>
+    <title>esbook - 创作书籍</title>
+</svelte:head>
+
+
 <main class="flex-grow flex flex-col max-w-7xl mx-auto px-4 py-6 w-full">
   <div class="seamless-container flex-grow">
     <!-- 左侧面板 - 大纲和封面 -->
     <div class="left-seamless flex flex-col">
       <!-- 书籍封面 -->
-      <div class="p-5 border-b border-gray-200">
+      <div class="p-5 border-b border-gray-200" >
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-primary flex items-center" on:click={togglecover}>
-            <i class="fa fa-image mr-2"></i>书籍封面
+            <i class="fa fa-image mr-2"></i>书籍信息
           </h2>
           <button class="toggle-btn" on:click={togglecover}> 
             <i class="fa fa-chevron-{coverdir}"></i>
           </button>
         </div>
         
-        <div class="flex flex-col items-center {hiddencover}">
-          <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 mb-4 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl">
-            <h3 class="text-2xl font-bold mb-2">书籍创作指南</h3>
-            <p class="text-lg opacity-90">专业写作技巧与策略</p>
-            <p class="mt-4 font-medium">作者：张三</p>
-          </div>
+        <div class="flex flex-col items-center {hiddencover}" >
+          <div class="w-full max-w-xs h-64 mb-4" id="bookCoverContainer">
+           {#if !coverImage}
+            <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 mb-4 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl" >
+                <h3 class="text-2xl font-bold mb-2">点击上传封面</h3>
+                <p class="text-lg opacity-90">或者鼠标点击此处后</p>
+                <p class="mt-4 font-medium">粘贴截图</p>
+            </div>
+            {:else}
+            <img src=""/>
+            {/if}
+
+          </div>  
           
           <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
             <label class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
@@ -593,7 +640,7 @@
               <input type="file" class="hidden">
             </label>
             <button class="bg-violet-500 hover:bg-violet-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center btn-hover text-sm">
-              <i class="fa fa-paint-brush mr-1"></i>设计
+              <i class="fa fa-paint-brush mr-1"></i>提交书籍信息
             </button>
           </div>
           
