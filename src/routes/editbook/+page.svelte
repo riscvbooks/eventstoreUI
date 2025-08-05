@@ -2,8 +2,14 @@
   import { onMount } from 'svelte';
   import NestedTree from '$lib/NestedTree.svelte';
   import "$lib/editbook.css";
-  import {upload_file,create_book} from "$lib/esclient";
+  
+  import {upload_file,create_book,
+    create_chapter,
+    get_book_id} from "$lib/esclient";
+  
   import {getKey} from "$lib/getkey";
+  import {uploadpath} from "$lib/config";
+
 
   let Keypriv;
   let Keypub;
@@ -11,9 +17,10 @@
   // 封面的显示和隐藏
   let coverdir = "down";
   let hiddencover = "hidden";
-  let coverImgData = "";
+  let coverImgData = '';
   let bookTitle  = '';
   let bookAuthor = '';
+  let coverImgurl='';
   let bookId = "";
  
   // 大纲的选中id号，用来显示大纲的样式渲染
@@ -98,93 +105,37 @@
       type: "folder",
       expanded: true,
       children: [
-        { 
-          id: 21, 
-          title: "第一章：开始创作", 
-          content: "# 第一章：开始创作\n\n在开始您的写作之旅之前...",
-          type: "chapter"
-        },
-        { 
-          id: 22, 
-          title: "第二章：构建框架", 
-          content: "# 第二章：构建框架\n\n构建一个坚实的框架是成功写作的基础...",
-          type: "chapter"
-        }
+ 
       ]
     },
-    { 
-      id: 3, 
-      title: "第二部分：进阶技巧",
-      type: "folder",
-      expanded: true,
-      children: [
-        { 
-          id: 31, 
-          title: "第三章：人物塑造", 
-          content: "# 第三章：人物塑造\n\n人物是小说的核心...",
-          type: "chapter"
-        },
-        { 
-          id: 32, 
-          title: "第四章：情节设计", 
-          content: "# 第四章：情节设计\n\n一个引人入胜的情节是吸引和保持读者兴趣的关键...",
-          type: "chapter"
-        }
-      ]
-    },
-    { 
-      id: 4, 
-      title: "第三部分：出版与营销",
-      type: "folder",
-      expanded: false,
-      children: [
-        { 
-          id: 41, 
-          title: "第五章：出版选择", 
-          content: "# 第五章：出版选择\n\n完成写作后，您将面临出版选择...",
-          type: "chapter"
-        }
-      ]
-    },
-    { 
-      id: 6, 
-      title: "修订补丁", 
-      content: "# 结语\n\n恭喜您完成了这本书！写作是一项具有挑战性但也非常有回报的工作...",
-      type: "chapter"
-    },
-    { 
-      id: 5, 
-      title: "结语", 
-      content: "# 结语\n\n恭喜您完成了这本书！写作是一项具有挑战性但也非常有回报的工作...",
-      type: "chapter"
-    }
+   
   ];
 
-  let nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+  
   
   // 添加新文件夹
   function addFolder() {
     const newFolder = {
-      id: nextId++,
+      id: nextId++ ,
       title: "新建文件夹",
       type: "folder",
       expanded: true,
       children: []
     };
     initialOutline = [...initialOutline, newFolder];
-    saveOutline();
+     
   }
   
   // 添加新章节
   function addChapter() {
     const newChapter = {
-      id: nextId++,
+      id: nextId++  ,
       title: "新建章节",
       content: "# 新建章节\n\n在这里开始编写您的内容...",
       type: "chapter"
     };
     initialOutline = [...initialOutline, newChapter];
-    saveOutline();
+    
   }
   
 
@@ -211,7 +162,7 @@
     }
     
     initialOutline = updatedOutline;
-    saveOutline();
+     
   }
 
   // 辅助函数：查找项目
@@ -325,7 +276,7 @@
       jsonFormatError = '';
       showRawOutlineModal = false;
       destroyCodeMirrorEditor(); // 关闭时销毁编辑器
-      saveOutline();
+      
       showNotification('大纲已更新');
     } catch (error) {
       jsonFormatError = '格式错误: ' + error.message;
@@ -352,8 +303,15 @@
   // 导出大纲为JSON文件
   function submitOutline() {
     try {
+      if (!bookId){
+         showNotification("请先完善书籍信息!");
+         return ;
+      }
+      showNotification("正在上传大纲");
       const dataStr = JSON.stringify(initialOutline, null, 2);
- 
+      create_chapter(bookId,dataStr,"outline.md",Keypub,Keypriv,function(message){
+        console.log(message)
+      })
  
     } catch (error) {
       showNotification('导出失败: ' + error.message, 'error');
@@ -389,7 +347,7 @@
                   showConfirmModal = true; // 显示自定义模态框
                   confirmcallback = function(result){
                     if (result){
-                        togglecover();
+                        window.location.href= window.location.href+"?bookid=" + bookId;
                     }
                     confirmcallback = "";
                     showConfirmModal = false;
@@ -419,7 +377,7 @@
     if (itemToUpdate) {
       itemToUpdate.title = newTitle.trim();
       initialOutline = updatedOutline; // 更新响应式数据
-      saveOutline(); // 保存到本地存储
+      
       updateStats(); // 更新统计信息
     }
   }
@@ -441,7 +399,7 @@
     if (parent && index !== -1) {
       parent.splice(index, 1); // 从父级数组中删除
       initialOutline = updatedOutline; // 更新响应式数据
-      saveOutline(); // 保存到本地存储
+       
       updateStats(); // 更新统计信息
 
       // 如果删除的是当前编辑项，重置编辑器
@@ -455,6 +413,22 @@
     }
   }
 
+
+  function getBookId(url1) {
+      let url;
+      // 处理传入的URL或使用当前页面URL
+      if (!url1) {
+          url = new URL(window.location.href);
+      } else {
+          url = new URL(url1);
+      }
+      
+      // 从查询参数中获取bookid（searchParams是处理URL查询参数的API）
+      let Id = url.searchParams.get('bookid');
+      
+      return Id; // 如果不存在会返回null
+  }
+
   onMount(async () => {
     // 加载CodeMirror库
     let Key = getKey();
@@ -466,6 +440,25 @@
         return ;
     }
     
+    bookId = getBookId();
+    if (bookId) {
+       get_book_id(bookId,function(message){
+        if (message[2] != "EOSE"){
+          bookAuthor = message.data.author;
+          bookTitle = message.data.title;
+          coverImgurl = message.data.coverImgurl;
+
+          const bookCover = document.querySelector('.book-cover');
+                      
+                      // 以相同方式显示图片
+          bookCover.style.backgroundImage = `url(${uploadpath+coverImgurl})`;
+          bookCover.style.backgroundSize = 'cover';
+          bookCover.style.backgroundPosition = 'center';
+          bookCover.innerHTML = ''; // 清空原有文字
+        }
+       })
+    }
+
     await Promise.all([
       new Promise(resolve => {
         const link = document.createElement('link');
