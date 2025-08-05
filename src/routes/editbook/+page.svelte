@@ -14,7 +14,7 @@
   let coverImgData = "";
   let bookTitle  = '';
   let bookAuthor = '';
- 
+  let bookId = "";
  
   // 大纲的选中id号，用来显示大纲的样式渲染
   let globalClickId = null;
@@ -29,6 +29,11 @@
   let codeMirrorEditor = null; // CodeMirror编辑器实例
 
 
+  let showConfirmModal = false;
+  let confirmMessage   = "";
+  let confirmcallback  = "";
+
+
   function showNotification(message, type = 'success') {
       const notification = document.createElement('div');
       const bgColor = type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-amber-500' : 'bg-primary';
@@ -41,6 +46,11 @@
         notification.classList.add('translate-y-20', 'opacity-0');
         setTimeout(() => document.body.removeChild(notification), 300);
       }, 3000);
+  }
+
+  // 处理用户确认/取消操作
+  function handleConfirm(confirmed) {
+       confirmcallback(confirmed);
   }
 
   // 封面隐藏显示函数
@@ -366,8 +376,26 @@
                 title:bookTitle,
                 author:bookAuthor
             }
+            let tmpid;
             create_book(bookInfo,Keypub,Keypriv,function(msg){
-                console.log(msg);
+                if (msg.code == 201) tmpid = msg.id
+                else {
+                   showNotification(msg.message);   
+                }
+                
+                if (msg.code == 200) {
+                  bookId = tmpid;
+                  confirmMessage = `书籍创建成功！\n 确认后编辑大纲!\n`;
+                  showConfirmModal = true; // 显示自定义模态框
+                  confirmcallback = function(result){
+                    if (result){
+                        togglecover();
+                    }
+                    confirmcallback = "";
+                    showConfirmModal = false;
+                  } 
+                }
+
             })
         } else {
             showNotification("正在上传封面"); 
@@ -905,6 +933,29 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" on:click={() => showRawOutlineModal = false}>取消</button>
         <button class="btn btn-primary" on:click={applyRawOutlineChanges}>应用更改</button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showConfirmModal}
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+      <h3 class="text-xl font-bold mb-4 text-primary">操作成功</h3>
+      <p class="text-gray-700 mb-6 whitespace-pre-line">{confirmMessage}</p>
+      <div class="flex justify-end gap-3">
+        <button 
+          class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition"
+          on:click={() => handleConfirm(false)}
+        >
+          取消
+        </button>
+        <button 
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition"
+          on:click={() => handleConfirm(true)}
+        >
+          确定
+        </button>
       </div>
     </div>
   </div>
