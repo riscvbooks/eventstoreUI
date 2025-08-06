@@ -47,7 +47,9 @@
   }
 
   function clickItem(item) {
-    onSetClickId(item.id);
+    if (!onSetClickId(item.id)){
+      return ;
+    }
     handleItemClick(item);
   }
 

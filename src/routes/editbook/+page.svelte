@@ -3,9 +3,12 @@
   import NestedTree from '$lib/NestedTree.svelte';
   import "$lib/editbook.css";
   
-  import {upload_file,create_book,
+  import {upload_file,
+    create_book,
+    update_book,
     create_chapter,
-    get_book_id} from "$lib/esclient";
+    get_book_id,
+    get_chapter} from "$lib/esclient";
   
   import {getKey} from "$lib/getkey";
   import {uploadpath} from "$lib/config";
@@ -40,6 +43,17 @@
   let confirmMessage   = "";
   let confirmcallback  = "";
 
+  let nextId = 0;
+
+  //编辑内容
+  let currentEditId = null;       // 当前编辑的章节ID
+  let currentContent = '';        // 当前编辑的内容
+  let currentTitle = '';          // 当前编辑的章节标题
+  let isUnsaved = false;          // 是否有未保存的变动
+  let lastSavedContent = '';      // 上次保存的内容用于对比
+  let simplemde = null;
+ 
+    
 
   function showNotification(message, type = 'success') {
       const notification = document.createElement('div');
@@ -52,7 +66,7 @@
       setTimeout(() => {
         notification.classList.add('translate-y-20', 'opacity-0');
         setTimeout(() => document.body.removeChild(notification), 300);
-      }, 3000);
+      }, 2000);
   }
 
   // 处理用户确认/取消操作
@@ -73,7 +87,10 @@
 
   // 更新全局选中状态的函数
   function handleSetClickId(id) {
+    if (isUnsaved) return false;
     globalClickId = id;
+    
+    return true;
   }
   
   // 处理章节选择
@@ -96,7 +113,6 @@
     { 
       id: 1, 
       title: "前言", 
-      content: "这本书将引导您完成整个书籍创作过程...",
       type: "chapter"
     },
     { 
@@ -111,6 +127,7 @@
    
   ];
 
+  nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
   
   
   // 添加新文件夹
@@ -131,7 +148,6 @@
     const newChapter = {
       id: nextId++  ,
       title: "新建章节",
-      content: "# 新建章节\n\n在这里开始编写您的内容...",
       type: "chapter"
     };
     initialOutline = [...initialOutline, newChapter];
@@ -307,10 +323,12 @@
          showNotification("请先完善书籍信息!");
          return ;
       }
-      showNotification("正在上传大纲");
+      
       const dataStr = JSON.stringify(initialOutline, null, 2);
       create_chapter(bookId,dataStr,"outline.md",Keypub,Keypriv,function(message){
-        console.log(message)
+        if (message.code == 200)
+          showNotification("大纲上传成功");
+        
       })
  
     } catch (error) {
@@ -319,48 +337,82 @@
   }
  
   function submitBookInfo(){
-    if (!bookAuthor || !bookTitle || !coverImgData){
+    if (!bookAuthor || !bookTitle || (!coverImgData && !coverImgurl)){
         showNotification("请填写完整的:作者，标题，封面","error");
         return ;
     }
     let filename = `coverimg.png`;
-    showNotification("正在上传封面"); 
-    upload_file(filename,coverImgData,Keypub,Keypriv,function(message){
+   
+    function upload_info(message) {       
         if (message[2].code == 200){
-            showNotification(message[2].message+" 正在上传书籍信息"); 
+             
             let url = message[2].fileUrl;
             let bookInfo = {
                 coverImgurl :url,
                 title:bookTitle,
                 author:bookAuthor
             }
-            let tmpid;
-            create_book(bookInfo,Keypub,Keypriv,function(msg){
-                if (msg.code == 201) tmpid = msg.id
-                else {
-                   showNotification(msg.message);   
-                }
-                
-                if (msg.code == 200) {
-                  bookId = tmpid;
-                  confirmMessage = `书籍创建成功！\n 确认后编辑大纲!\n`;
-                  showConfirmModal = true; // 显示自定义模态框
-                  confirmcallback = function(result){
-                    if (result){
-                        window.location.href= window.location.href+"?bookid=" + bookId;
-                    }
-                    confirmcallback = "";
-                    showConfirmModal = false;
-                  } 
-                }
+            if (bookId ){
+              update_book(bookInfo,bookId,Keypub,Keypriv,function(msg){
+                    if (msg.code == 200) {
+                    
+                    confirmMessage = `书籍创建成功！\n 确认后编辑大纲!\n`;
+                    showConfirmModal = true; // 显示自定义模态框
+                    confirmcallback = function(result){
+                      if (result){
+                          window.location.href= window.location.href
+                      }
+                      confirmcallback = "";
+                      showConfirmModal = false;
+                    } 
+                  }
+              })
+            } else {
 
-            })
+              let tmpid;
+              create_book(bookInfo,Keypub,Keypriv,function(msg){
+                  if (msg.code == 201) tmpid = msg.id
+                  else {
+                    showNotification(msg.message);   
+                  }
+                  
+                  if (msg.code == 200) {
+                    bookId = tmpid;
+                    confirmMessage = `书籍创建成功！\n 确认后编辑大纲!\n`;
+                    showConfirmModal = true; // 显示自定义模态框
+                    confirmcallback = function(result){
+                      if (result){
+                          window.location.href= window.location.href+"?bookid=" + bookId;
+                      }
+                      confirmcallback = "";
+                      showConfirmModal = false;
+                    } 
+                  }
+
+              })
+            }
+          
+
         } else {
             showNotification("正在上传封面"); 
         }
         
-        
-    })
+    }
+    //需要上传图片
+    if (!coverImgurl){
+
+
+      showNotification("正在上传封面"); 
+      upload_file(filename,coverImgData,Keypub,Keypriv,upload_info)
+    }
+    else {
+      //无需上传图片，模拟上传成功消息
+      upload_info([0,0,{
+        code:200,
+        message:"",
+        fileUrl:coverImgurl
+      }])
+    }
   }
 
 
@@ -378,17 +430,13 @@
       itemToUpdate.title = newTitle.trim();
       initialOutline = updatedOutline; // 更新响应式数据
       
-      updateStats(); // 更新统计信息
+
     }
   }
 
   // 删除章节/文件夹
   function handleDelete(item) {
-    // 禁止删除前言
-    if (item.id === 1) {
-      alert('前言章节不能删除');
-      return;
-    }
+
 
     if (!confirm(`确定要删除"${item.title}"吗？`)) return;
 
@@ -400,7 +448,7 @@
       parent.splice(index, 1); // 从父级数组中删除
       initialOutline = updatedOutline; // 更新响应式数据
        
-      updateStats(); // 更新统计信息
+     
 
       // 如果删除的是当前编辑项，重置编辑器
       if (globalClickId === item.id) {
@@ -442,8 +490,9 @@
     
     bookId = getBookId();
     if (bookId) {
-       get_book_id(bookId,function(message){
-        if (message[2] != "EOSE"){
+       await get_book_id(bookId,function(message){
+        if (message != "EOSE"){
+           
           bookAuthor = message.data.author;
           bookTitle = message.data.title;
           coverImgurl = message.data.coverImgurl;
@@ -457,6 +506,14 @@
           bookCover.innerHTML = ''; // 清空原有文字
         }
        })
+
+       await get_chapter(bookId,"outline.md",function(message){
+           if (message != "EOSE"){
+             
+            initialOutline = JSON.parse(message.data)
+            nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+          }
+       });
     }
 
     await Promise.all([
@@ -505,6 +562,8 @@
       const editorElement = document.getElementById('editor');
       if (!editorElement) return;
       
+ 
+      
       const simplemde = new SimpleMDE({ 
         element: editorElement,
         spellChecker: false,
@@ -514,11 +573,22 @@
           uniqueId: "bookEditor",
           delay: 1000,
         },
-        toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"]
+        toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"],
+        // 添加编辑器高度配置（部分主题可能需要）
+    
       });
+      
+      // 强制调整编辑器内部高度
+      const cmElement = simplemde.codemirror.getWrapperElement();
+      if (cmElement) {
+         
+        cmElement.style.height = '85%';
+        cmElement.style.minHeight = '70%';
+      }
       
       simplemde.codemirror.on("change", function() {
         if (currentEditId !== null) {
+          isUnsaved = true;
           const chapter = findChapter(currentEditId);
           if (chapter) {
             chapter.content = simplemde.value();
@@ -562,29 +632,14 @@
     function updateStats() {
       let chapterCount = 0;
       let wordCount = 0;
-      
-      function countItems(items) {
-        items.forEach(item => {
-          if (item.type === 'chapter') {
-            chapterCount++;
-            const text = item.content ? item.content.replace(/<[^>]*>/g, '') : '';
-            wordCount += text.length;
-          }
-          if (item.children) countItems(item.children);
-        });
-      }
-      
-      countItems(initialOutline);
-      
+            
       const totalChaptersEl = document.getElementById('totalChapters');
       const totalWordsEl = document.getElementById('totalWords');
       if (totalChaptersEl) totalChaptersEl.textContent = chapterCount;
       if (totalWordsEl) totalWordsEl.textContent = wordCount;
     }
 
-    let simplemde = null;
-    let currentEditId = null;
-    
+
     loadSimpleMDE(() => {
       simplemde = initEditor();
       updateStats();
@@ -596,7 +651,7 @@
           const chapter = findChapter(currentEditId);
           if (chapter) {
             currentChapterTitle.textContent = chapter.title;
-            simplemde.value(chapter.content || '');
+            simplemde.value('');
             updateWordCount(simplemde);
           }
         }
@@ -641,6 +696,7 @@
                         bookCover.style.backgroundPosition = 'center';
                         // 清空原有文字
                         bookCover.innerHTML = '';
+                        coverImgurl = "";
                         showNotification('已粘贴图片作为封面');
 
                         
@@ -705,6 +761,7 @@
                     bookCover.style.backgroundSize = 'cover';
                     bookCover.style.backgroundPosition = 'center';
                     bookCover.innerHTML = ''; // 清空原有文字
+                    coverImgurl = "";
                     
                     // 显示提示
                     showNotification('已上传图片作为封面');
@@ -867,11 +924,13 @@
             <button class="p-2 text-white hover:bg-white/20 rounded-lg transition">
               <i class="fa fa-history"></i>
             </button>
-            <button class="p-2 text-white hover:bg-white/20 rounded-lg transition">
-              <i class="fa fa-search"></i>
+            <button class="p-2 text-white hover:bg-white/20 rounded-lg transition" 
+                    data-tooltip="保存为草稿">
+              <i class="fa fa-file-excel-o"></i>
             </button>
-            <button class="p-2 text-white hover:bg-white/20 rounded-lg transition">
-              <i class="fa fa-cog"></i>
+            <button class="p-2 text-white hover:bg-white/20 rounded-lg transition" 
+                    data-tooltip="保存">
+              <i class="fa fa-save"></i>
             </button>
           </div>
         </div>
@@ -887,7 +946,7 @@
               <i class="fa fa-clock-o mr-1"></i> 0 分钟阅读
             </span>
           </div>
-          <span id="lastSaved" class="text-sm text-gray-600">尚未保存</span>
+          <span id="lastSaved" class="text-sm text-gray-600">{isUnsaved ? '尚未保存' : '无需保存'}</span>
         </div>
         
         <!-- 编辑器区域 -->
