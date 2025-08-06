@@ -168,6 +168,7 @@ export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
   await delete_event(bookid,pubkey,privkey,function(e){});
+
   let event = {
   
       "ops": "C",
@@ -259,6 +260,7 @@ export async function get_chapter(bookId,name,callback){
     event.tags.push(['d',name])
   }
 
+  
   client.subscribe(event,function(message){
          
     if (message[2] == "EOSE") client.unsubscribe(message[1]);

@@ -137,7 +137,8 @@
     isUnsaved = false;
 
     get_chapter(bookId,item.id,function(message){
-           if (message != "EOSE"){             
+           if (message != "EOSE"){     
+                 
             simplemde.value (message.data);
             isUnsaved = false;
            }
@@ -618,21 +619,40 @@
       const editorElement = document.getElementById('editor');
       if (!editorElement) return;
       
- 
+         const insertImageButton = {
+                name: 'insertImage',
+                action: function (editor) {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.addEventListener('change', async (event) => {
+                        const file = event.target.files[0];
+                        if (file) {
+                            const imageUrl = URL.createObjectURL(file);
+                            const cm = editor.codemirror;
+                            const cursor = cm.getCursor();
+                            const imageMarkdown = `![图片](${imageUrl})\n`;
+                            cm.replaceRange(imageMarkdown, cursor);
+                            cm.setCursor(cursor.line + 1, 0);
+                        }
+                    });
+                    input.click();
+                },
+                className: 'fa fa-camera',
+                title: '上传图片'
+            };
       
       const simplemde = new SimpleMDE({ 
         element: editorElement,
         spellChecker: false,
         status: false,
-        autosave: {
-          enabled: true,
-          uniqueId: "bookEditor",
-          delay: 1000,
-        },
-        toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide"],
+
+        toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", 
+        "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide", insertImageButton, '|',],
         // 添加编辑器高度配置（部分主题可能需要）
     
       });
+      
       
       // 强制调整编辑器内部高度
       const cmElement = simplemde.codemirror.getWrapperElement();
@@ -695,18 +715,6 @@
       simplemde = initEditor();
       updateStats();
       
-      if (initialOutline.length > 0 && initialOutline[0].type === 'chapter') {
-        currentEditId = initialOutline[0].id;
-        
-        if (simplemde) {
-          const chapter = findChapter(currentEditId);
-          if (chapter) {
-            currentChapterTitle  = chapter.title;
-            simplemde.value('');
-            updateWordCount(simplemde);
-          }
-        }
-      }
     });
 
 
@@ -725,9 +733,59 @@
     });
         
     
+    const handleMDEPaste = async (event) => {
+        if (!simplemde || !simplemde.codemirror.hasFocus()) {
+            return; // 焦点不在编辑器内，不处理
+        }
+
+        const clipboardData = event.clipboardData;
+
+        if (clipboardData) {
+            for (let i = 0; i < clipboardData.items.length; i++) {
+                const item = clipboardData.items[i];
+
+                if (item.type.indexOf('image') !== -1) {
+                    const blob = item.getAsFile();
+                                            // 2. 读取blob并转换为Uint8Array
+                    const reader = new FileReader();
+                        
+                        // 方法A：通过ArrayBuffer转换（推荐，更直接）
+                    reader.onload = function(event) {
+                            // event.target.result 是 ArrayBuffer
+                            const arrayBuffer = event.target.result;
+                             
+                            const uint8Array = new Uint8Array(arrayBuffer);
+                            
+                            upload_file("paste.png",uint8Array,Keypub,Keypriv,function(message){
+
+                              if (message[2].code == 200){
+             
+                                let url = message[2].fileUrl;
+                            
+                                const cm = simplemde.codemirror;
+                                const cursor = cm.getCursor();
+                                const imageMarkdown = `![图片](${uploadpath+url})\n`;
+                                cm.replaceRange(imageMarkdown, cursor);
+                                cm.setCursor(cursor.line + 1, 0);
+                              }
+
+                            })
+                           
+                    };
+                        
+                    reader.readAsArrayBuffer(blob);
+
+                    break;
+                }
+            }
+        }
+    };
+
     // 监听整个文档的粘贴事件
     document.addEventListener('paste', function(e) {
        
+       handleMDEPaste(e);
+
         // 检查粘贴事件是否发生在目标容器内
         if (moveInbookCoverContainer) {
              
