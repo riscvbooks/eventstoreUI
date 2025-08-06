@@ -240,7 +240,7 @@ export async function create_chapter(bookId,content,name,pubkey,privkey,callback
       "code": 200,
       "user": pubkey,
       "data": content,
-      "tags":[ ['t','create_chapter'],['web','esbook'],['bid',bookId],['d',name]]
+      "tags":[ ['t','create_chapter'],['web','esbook'],['bid',bookId],['d',bookId+'_'+name]]
     }
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
@@ -257,7 +257,7 @@ export async function get_chapter(bookId,name,callback){
       "tags":[ ['t','create_chapter'],['web','esbook'],['bid',bookId]]
     }
   if (name){
-    event.tags.push(['d',name])
+    event.tags.push(['d',bookId+'_'+name])
   }
 
   
