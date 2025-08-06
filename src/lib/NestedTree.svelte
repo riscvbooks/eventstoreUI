@@ -46,8 +46,9 @@
     activeMenuId = activeMenuId === itemId ? null : itemId;
   }
 
-  function clickItem(item) {
-    if (!onSetClickId(item.id)){
+  async function clickItem(item) {
+    let result = await onSetClickId(item);
+    if (!result){
       return ;
     }
     handleItemClick(item);

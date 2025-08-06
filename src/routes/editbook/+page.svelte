@@ -43,14 +43,16 @@
   let confirmMessage   = "";
   let confirmcallback  = "";
 
+  let showSavedModal = false;
+  let savedMessage = "";
+  let savedCallback = "";
+
   let nextId = 0;
 
   //编辑内容
   let currentEditId = null;       // 当前编辑的章节ID
-  let currentContent = '';        // 当前编辑的内容
-  let currentTitle = '';          // 当前编辑的章节标题
+  let currentChapterTitle = "";
   let isUnsaved = false;          // 是否有未保存的变动
-  let lastSavedContent = '';      // 上次保存的内容用于对比
   let simplemde = null;
  
     
@@ -73,6 +75,10 @@
   function handleConfirm(confirmed) {
        confirmcallback(confirmed);
   }
+  
+  function handleSavedConfirm(confirmed) {
+       savedCallback(confirmed) ;
+  }
 
   // 封面隐藏显示函数
   function togglecover() {
@@ -85,10 +91,38 @@
     }
   }
 
-  // 更新全局选中状态的函数
-  function handleSetClickId(id) {
-    if (isUnsaved) return false;
-    globalClickId = id;
+ 
+
+  async function handleSetClickId(item) {
+    if (globalClickId == item.id) return true;
+
+    if (isUnsaved) {
+      const userChoice = await new Promise((resolve) => {
+        savedMessage = `内容已经改变是否保存？\n`;
+        showSavedModal = true; // 显示模态框
+        savedCallback = function(result){
+          resolve(result);
+        }
+         
+      });
+      savedMessage = "";
+      showSavedModal = false;
+
+      // 根据用户选择处理不同逻辑
+      switch (userChoice) {
+        case 1: // 取消操作：不切换章节
+          return false; 
+        case 2: // 不保存：直接切换章节（放弃未保存内容）
+          isUnsaved = false; // 重置未保存状态
+          simplemde.value("");
+          break; 
+        case 3: // 保存：先执行保存（异步操作），再切换章节
+          await saveCurrentChapter(); // 等待保存完成（假设saveCurrentContent返回Promise）
+          break;
+      }
+      
+    }
+    globalClickId = item.id;
     
     return true;
   }
@@ -96,6 +130,9 @@
   // 处理章节选择
   function handleChapterSelect(item) {
     console.log('选中章节:', item);
+    currentEditId = item.id;
+    currentChapterTitle = item.title;
+
   }
 
   // 回调函数：更新拖动项
@@ -416,7 +453,10 @@
   }
 
 
-
+  function saveCurrentChapter(){
+    console.log(currentEditId);
+    console.log(simplemde.value());
+  }
   function handleRename(item) {
     // 提示用户输入新名称
     const newTitle = prompt('请输入新名称', item.title);
@@ -453,14 +493,14 @@
       // 如果删除的是当前编辑项，重置编辑器
       if (globalClickId === item.id) {
         globalClickId = null;
-        const currentChapterTitle = document.getElementById('currentChapterTitle');
-        if (currentChapterTitle) currentChapterTitle.textContent = '选择大纲项进行编辑';
+        currentChapterTitle = "";
         const simplemde = window.SimpleMDEInstances?.[0]; // 假设编辑器实例可访问
         if (simplemde) simplemde.value('');
       }
     }
   }
 
+  
 
   function getBookId(url1) {
       let url;
@@ -589,13 +629,8 @@
       simplemde.codemirror.on("change", function() {
         if (currentEditId !== null) {
           isUnsaved = true;
-          const chapter = findChapter(currentEditId);
-          if (chapter) {
-            chapter.content = simplemde.value();
-            
-            updateWordCount(simplemde);
-            updateStats();
-          }
+          updateStats();
+          
         }
       });
       
@@ -646,11 +681,11 @@
       
       if (initialOutline.length > 0 && initialOutline[0].type === 'chapter') {
         currentEditId = initialOutline[0].id;
-        const currentChapterTitle = document.getElementById('currentChapterTitle');
-        if (currentChapterTitle && simplemde) {
+        
+        if (simplemde) {
           const chapter = findChapter(currentEditId);
           if (chapter) {
-            currentChapterTitle.textContent = chapter.title;
+            currentChapterTitle  = chapter.title;
             simplemde.value('');
             updateWordCount(simplemde);
           }
@@ -918,7 +953,7 @@
             <h2 class="text-xl font-semibold flex items-center">
               <i class="fa fa-edit mr-2"></i>内容编辑
             </h2>
-            <h3 id="currentChapterTitle" class="text-lg font-medium mt-1">选择大纲项进行编辑</h3>
+            <h3  class="text-lg font-medium mt-1">{currentChapterTitle? currentChapterTitle:"选择大纲项进行编辑"}</h3>
           </div>
           <div class="flex gap-2">
             <button class="p-2 text-white hover:bg-white/20 rounded-lg transition">
@@ -993,7 +1028,7 @@
 {#if showConfirmModal}
   <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-      <h3 class="text-xl font-bold mb-4 text-primary">操作成功</h3>
+      <h3 class="text-xl font-bold mb-4 text-primary">提示</h3>
       <p class="text-gray-700 mb-6 whitespace-pre-line">{confirmMessage}</p>
       <div class="flex justify-end gap-3">
         <button 
@@ -1007,6 +1042,39 @@
           on:click={() => handleConfirm(true)}
         >
           确定
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+{#if showSavedModal}
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+      <h3 class="text-xl font-bold mb-4 text-primary">提示</h3>
+      <p class="text-gray-700 mb-6 whitespace-pre-line">{savedMessage}</p>
+      <div class="flex justify-end gap-3">
+        <button 
+          class="px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded hover:bg-gray-50 transition"
+          on:click={() => handleSavedConfirm(1)}
+        >
+          取消
+        </button>
+
+        <!-- 不保存按钮：危险操作，使用橙色系警告色 -->
+        <button 
+          class="px-4 py-2 bg-orange-50 text-orange-700 border border-orange-200 rounded hover:bg-orange-100 transition"
+          on:click={() => handleSavedConfirm(2)}
+        >
+          不保存
+        </button>
+
+        <!-- 保存按钮：主要操作，使用主色调（这里假设是蓝色系） -->
+        <button 
+          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          on:click={() => handleSavedConfirm(3)}
+        >
+          保存
         </button>
       </div>
     </div>
