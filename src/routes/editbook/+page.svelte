@@ -408,7 +408,7 @@
                     showConfirmModal = true; // 显示自定义模态框
                     confirmcallback = function(result){
                       if (result){
-                          window.location.href= window.location.href
+                          window.location.reload();
                       }
                       confirmcallback = "";
                       showConfirmModal = false;
@@ -420,9 +420,7 @@
               let tmpid;
               create_book(bookInfo,Keypub,Keypriv,function(msg){
                   if (msg.code == 201) tmpid = msg.id
-                  else {
-                    showNotification(msg.message);   
-                  }
+                  
                   
                   if (msg.code == 200) {
                     bookId = tmpid;
@@ -441,9 +439,7 @@
             }
           
 
-        } else {
-            showNotification("正在上传封面"); 
-        }
+        } 
         
     }
     //需要上传图片
