@@ -132,6 +132,16 @@
     console.log('选中章节:', item);
     currentEditId = item.id;
     currentChapterTitle = item.title;
+  
+    simplemde.value("");
+    isUnsaved = false;
+
+    get_chapter(bookId,item.id,function(message){
+           if (message != "EOSE"){             
+            simplemde.value (message.data);
+            isUnsaved = false;
+           }
+    })
 
   }
 
@@ -454,8 +464,14 @@
 
 
   function saveCurrentChapter(){
-    console.log(currentEditId);
-    console.log(simplemde.value());
+
+
+    create_chapter(bookId,simplemde.value(),currentEditId,Keypub,Keypriv,function(message){
+       if (message.code == 200){
+        isUnsaved = false;
+        showNotification("内容保存成功"); 
+       }
+    })
   }
   function handleRename(item) {
     // 提示用户输入新名称
@@ -964,7 +980,7 @@
               <i class="fa fa-file-excel-o"></i>
             </button>
             <button class="p-2 text-white hover:bg-white/20 rounded-lg transition" 
-                    data-tooltip="保存">
+                    data-tooltip="保存" on:click={saveCurrentChapter}>
               <i class="fa fa-save"></i>
             </button>
           </div>
