@@ -5,13 +5,25 @@
   import {get_books} from "$lib/esclient";
 
  
+
+ function getTagValue(tags,t) {
+  const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
+  return dTag ? dTag[1] : null;
+}
+
+
   let books = [];
   let displayedBooks = [...books];
   function handleBooks(e){
     console.log(e);
-    if (e != "EOSE")
+    if (e != "EOSE"){
+        // 改变bookId
+        if (getTagValue(e.tags,'d')){
+            e.id = getTagValue(e.tags,'d');
+        } 
+
         books.push(e)
-    else {
+    } else {
         displayedBooks = [...books]
     }
     console.log(displayedBooks)
@@ -85,6 +97,10 @@
         }));
         
         displayedBooks = [...displayedBooks, ...newBooks];
+    }
+
+    function goTobook(bookId){
+        window.location.href = "/viewbooks/" + bookId;
     }
     
     // 导航栏滚动效果
@@ -467,7 +483,7 @@
       
         <div class="book-grid">
             {#each displayedBooks as book}
-                <div class="book-card cursor-pointer"  >
+                <div class="book-card cursor-pointer" on:click={goTobook(book.id)} >
                     <div class="book-card-inner">
                         <div class="book-cover book-ribbon relative" style="background-image: url('{uploadpath+book.data.coverImgurl}');">
                             {#if book.ribbon}

@@ -208,7 +208,19 @@
    $: if (mdcontent) { 
  
         let precontent = processMarkdownImages(mdcontent);
-        compiledContent = window.__current_docsify_compiler__.compile(precontent);
+        if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile){
+            compiledContent = window.__current_docsify_compiler__.compile(precontent);
+        } else {
+            setTimeout(() => {
+                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__?.compile) {
+                    compiledContent = window.__current_docsify_compiler__.compile(precontent);
+                } else {
+                    // 可选：多次重试或错误处理
+                    console.warn('docsify编译器仍未加载完成');
+                }
+            }, 1000); 
+        }
+        
          
     }
 

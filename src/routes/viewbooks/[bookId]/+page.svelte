@@ -113,6 +113,8 @@
 
     })
 
+
+
 </script>
 
 <style>
@@ -458,6 +460,108 @@
     width: 240px;
   }
 }
+
+/* 主容器确保占满全屏高度 */
+.book-view-container {
+  display: flex;
+  min-height: 100vh; /* 占满视口高度 */
+  height: 100vh; /* 固定高度，避免内容撑开容器 */
+  overflow: hidden; /* 隐藏容器自身滚动条 */
+}
+
+/* 左侧大纲容器：固定高度 + 内部滚动 */
+.book-sidebar {
+  height: 100vh; /* 与视口等高 */
+  padding: 1.8rem;
+  overflow-y: auto; /* 内容超出时显示滚动条 */
+  /* 保留原有其他样式（宽度、背景等） */
+}
+
+/* 右侧 TOC 容器：固定高度 + 内部滚动 */
+.right-toc-container {
+  height: 100vh; /* 与视口等高 */
+  padding: 1.8rem 0;
+  overflow-y: auto; /* 内容超出时显示滚动条 */
+  /* 保留原有其他样式（宽度、背景等） */
+}
+
+/* 中间内容区：固定高度 + 独立滚动 */
+.book-content {
+  flex: 1; /* 自适应剩余宽度 */
+  height: 100vh; /* 与视口等高 */
+  overflow-y: auto; /* 内容超出时显示滚动条 */
+  padding: 2rem 3rem;
+  /* 可选：添加滚动条美化 */
+  scrollbar-width: thin; /* 细滚动条（Firefox） */
+}
+
+/* 美化滚动条（可选，适配 Chrome/Safari） */
+.book-sidebar::-webkit-scrollbar,
+.right-toc-container::-webkit-scrollbar,
+.book-content::-webkit-scrollbar {
+  width: 6px; /* 滚动条宽度 */
+}
+
+.book-sidebar::-webkit-scrollbar-thumb,
+.right-toc-container::-webkit-scrollbar-thumb,
+.book-content::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5); /* 滚动条颜色 */
+  border-radius: 3px; /* 圆角 */
+}
+
+.book-sidebar::-webkit-scrollbar-track,
+.right-toc-container::-webkit-scrollbar-track,
+.book-content::-webkit-scrollbar-track {
+  background-color: transparent; /* 轨道透明 */
+}
+
+/* 返回首页按钮容器 */
+.back-home-container {
+  margin-bottom: -1rem; /* 调整与下方书籍信息的间距 */
+  padding: 0 0.5rem; /* 与侧边栏边缘对齐 */
+}
+
+/* 返回首页按钮样式 */
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(79, 70, 229, 0.2);
+}
+
+/* 按钮交互效果 */
+.back-home-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+  background: linear-gradient(135deg, #4338ca 0%, #7c3aed 100%);
+}
+
+.back-home-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 3px rgba(79, 70, 229, 0.2);
+}
+
+/* 图标样式优化 */
+.back-home-btn i {
+  font-size: 1rem;
+}
+
+/* 响应式适配 */
+@media (max-width: 768px) {
+  .back-home-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+  }
+}
+
 </style>
 
 <!-- 页面主容器 -->
@@ -467,6 +571,12 @@
     <!-- 左侧边栏 - 书籍信息和大纲 -->
     <aside class="book-sidebar">
         <!-- 书籍信息 -->
+      <div class="back-home-container">
+        <button class="back-home-btn" on:click={() => window.location.href = '/viewbooks'}>
+          <i class="fa fa-home mr-2"></i>返回
+        </button>
+      </div>
+
       <div class="book-meta">
         <div class="p-5">
           <h1 class="book-title text-xl font-bold text-gray-800 mb-1 line-clamp-2">
