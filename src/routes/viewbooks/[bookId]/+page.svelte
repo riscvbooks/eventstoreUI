@@ -28,6 +28,10 @@
     globalClickId = item.id;
 
     currentChapterContent = "";
+    const tocContainer = document.getElementById('right-toc');
+    if (tocContainer) {
+        tocContainer.innerHTML=""
+    }
    }
 
   function handleChapterSelect(item) {
@@ -347,6 +351,113 @@
     padding: 1.5rem;
   }
 }
+
+
+/* 右侧 TOC 容器样式 */
+.right-toc-container {
+  width: 280px;
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.8rem 0;
+  overflow-y: auto;
+  box-shadow: -2px 0 15px rgba(0, 0, 0, 0.03);
+  backdrop-filter: blur(10px);
+   
+  z-index: 9; /* 低于左侧边栏，高于内容区 */
+}
+
+/* TOC 标题样式 */
+.toc-container::before {
+  content: '章节导航';
+  display: block;
+  padding: 0 1.2rem 1rem;
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  border-bottom: 2px solid rgba(79, 70, 229, 0.15);
+}
+
+ 
+/* TOC 项基础样式 */
+.toc-item {
+  margin: 0.4rem 0;
+  transition: all 0.2s ease;
+}
+
+.toc-link {
+  display: block;
+  padding: 0.4rem 1.2rem;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  transition: all 0.2s;
+  border-right: 3px solid transparent;
+}
+
+/* TOC 项交互效果 */
+.toc-item:hover .toc-link {
+  color: #4F46E5;
+  background-color: rgba(79, 70, 229, 0.03);
+}
+
+.toc-link.active {
+  color: #4F46E5;
+  font-weight: 500;
+  background-color: rgba(79, 70, 229, 0.05);
+  border-right: 3px solid #4F46E5;
+}
+
+/* 多级标题缩进优化 */
+.lv1 .toc-link { /* h1 */
+  font-weight: 500;
+  padding-left: 1.2rem;
+}
+
+.lv2 .toc-link { /* h2 */
+  padding-left: 1.8rem;
+  font-size: 0.9rem;
+}
+
+.lv3 .toc-link { /* h3 */
+  padding-left: 2.4rem;
+  font-size: 0.88rem;
+  color: #8492a6;
+}
+
+/* 空 TOC 状态 */
+.right-toc-container:empty {
+  display: none; /* 无内容时隐藏 */
+}
+
+/* 调整主布局适配 TOC */
+.book-view-container {
+  gap: 0; /* 移除列间距 */
+}
+
+.book-content {
+  flex: 1; /* 内容区自适应剩余宽度 */
+  padding: 2rem 3rem; /* 增加内边距，与 TOC 区分 */
+}
+
+/* 响应式设计：小屏幕隐藏 TOC */
+@media (max-width: 1200px) {
+  .right-toc-container {
+    display: none;
+  }
+  
+  .book-content {
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* 中等屏幕调整 TOC 宽度 */
+@media (min-width: 1200px) and (max-width: 1440px) {
+  .right-toc-container {
+    width: 240px;
+  }
+}
 </style>
 
 <!-- 页面主容器 -->
@@ -414,6 +525,11 @@
         </div>
       {/if}
     </main>
+
+        <!-- 右侧 TOC 容器（新增） -->
+    <aside class="right-toc-container " id="right-toc">
+      <!-- TOC 内容将由 ViewMD 生成并插入 -->
+    </aside>
  
 </div>
 
