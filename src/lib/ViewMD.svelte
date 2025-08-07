@@ -142,34 +142,68 @@
         // 移除旧的滚动监听
         window.removeEventListener('scroll', handleTocScroll);
         
-        // 添加新的滚动监听
+        // 优化：滚动高亮函数中同步 URL 哈希（可选）
         function handleTocScroll() {
-            const scrollY = window.scrollY + 100; // 偏移量，优化高亮时机
+            const scrollY = window.scrollY + 100;
             let activeId = '';
             
-            // 找到当前可见的标题
             tocData.forEach(item => {
-            const heading = document.getElementById(item.id);
-            if (heading) {
+                const heading = document.getElementById(item.id);
+                if (heading) {
                 const rect = heading.getBoundingClientRect();
-                // 标题顶部进入视口
                 if (rect.top <= 100 && rect.bottom >= 0) {
-                activeId = item.id;
+                    activeId = item.id;
                 }
-            }
+                }
             });
             
-            // 更新 TOC 高亮状态
+            // 更新高亮状态
             const links = document.querySelectorAll('.toc-link');
             links.forEach(link => {
-            link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`);
+                link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`);
             });
+            
+            // 同步 URL 哈希（可选）
+            if (activeId && window.location.hash !== `#${activeId}`) {
+                history.replaceState(null, null, `#${activeId}`);
+            }
         }
         
         window.addEventListener('scroll', handleTocScroll);
         // 初始触发一次，设置默认高亮
         handleTocScroll();
     }
+
+    function bindTocClickEvents() {
+        const tocLinks = document.querySelectorAll('#right-toc .toc-link');
+        
+        tocLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+            // 1. 阻止默认跳转行为（避免页面重新加载或URL哈希变化导致的闪烁）
+            e.preventDefault();
+            
+            // 2. 获取目标锚点 ID（从 href 中提取，如 "#environment" → "environment"）
+            const targetId = link.getAttribute('href').replace('#', '');
+            if (!targetId) return;
+            
+            // 3. 查找对应的标题元素
+            const targetElement = document.getElementById(targetId);
+            if (targetElement) {
+                // 4. 平滑滚动到目标元素（距离顶部留 20px 边距）
+                targetElement.scrollIntoView({
+                behavior: 'smooth', // 平滑滚动
+                block: 'start', // 对齐方式：顶部对齐
+                inline: 'nearest'
+                });
+                
+                // 5. 手动更新 URL 哈希（可选，保持 URL 与当前章节同步）
+                history.pushState(null, null, `#${targetId}`);
+            }
+            });
+        });
+    }
+
+
 
    $: if (mdcontent) { 
  
@@ -197,6 +231,7 @@
             if (tocContainer) {
                 tocContainer.innerHTML = result.tocHtml;
                 initTocScrollHighlight(result.tocData);
+                bindTocClickEvents();
             }
         } 
 
