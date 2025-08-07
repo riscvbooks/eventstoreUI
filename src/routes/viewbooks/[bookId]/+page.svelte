@@ -112,103 +112,241 @@
 </script>
 
 <style>
-  /* 保留原样式，移除与Tailwind冲突的部分 */
+/* 基础布局样式 */
+.book-view-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e6e9f0 100%);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 侧边栏样式（合并重复定义，保留增强版设计） */
+.book-sidebar {
+  width: 340px;
+  background: rgba(255, 255, 255, 0.95);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1.8rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+/* 书籍信息卡片样式 */
+.book-meta {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 
+              0 5px 10px -5px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  margin-bottom: 2rem;
+  position: relative; /* 用于伪元素定位 */
+}
+
+.book-meta::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px; /* 高度减少，视觉更纤细 */
+  background: linear-gradient(90deg, 
+    rgba(79, 70, 229, 0.4),  /* 降低蓝色透明度 */
+    rgba(139, 92, 246, 0.4)  /* 降低紫色透明度 */
+  );
+  z-index: -1;
+}
+
+/* 书籍标题与作者样式 */
+.book-title {
+  font-size: 1.4rem;
+  color: #1e293b;
+  line-height: 1.4;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.book-author {
+  color: #64748b;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0; /* 保留必要的间距 */
+}
+
+/* 书籍统计信息 */
+.book-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1.2rem;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.stat-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(79, 70, 229, 0.08);
+  border-radius: 8px;
+  color: #4F46E5;
+}
+
+/* 目录区域样式 */
+.book-outline h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.2rem;
+  color: #1e293b;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid rgba(79, 70, 229, 0.15);
+}
+
+.outline-tree {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* 大纲项样式 */
+.outline-item {
+  padding: 0.5rem 0.8rem;
+  margin: 0.3rem 0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.outline-item:hover {
+  background: rgba(79, 70, 229, 0.03);
+  border-left: 3px solid rgba(79, 70, 229, 0.2);
+}
+
+.outline-item.active {
+  background: rgba(79, 70, 229, 0.08);
+  border-left: 3px solid #4F46E5;
+  color: #4F46E5;
+  font-weight: 500;
+}
+
+.outline-icon {
+  color: #8B5CF6;
+  font-size: 0.9rem;
+}
+
+.chapter-number {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 6px;
+  text-align: center;
+  line-height: 24px;
+  font-size: 0.8rem;
+  color: #8B5CF6;
+  margin-right: 0.3rem;
+}
+
+/* 空目录提示样式 */
+.empty-outline {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin: 1rem 0;
+  padding: 1.5rem;
+  background: rgba(241, 245, 249, 0.8);
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  text-align: center;
+}
+
+/* 章节层级缩进 */
+.outline-children {
+  margin-left: 1.8rem;
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  padding-left: 1rem;
+}
+
+/* 右侧内容区样式 */
+.book-content {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background-color: #ffffff;
+}
+
+.no-selection, .no-content {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+/* 加载状态样式 */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.loading-spinner {
+  font-size: 1.2rem;
+  color: #374151;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* 响应式设计（合并重复断点样式） */
+@media (max-width: 768px) {
   .book-view-container {
-    display: flex;
-    min-height: 100vh;
-    width: 100%;
-    background-color: #f9fafb;
+    flex-direction: column;
   }
   
   .book-sidebar {
-    width: 320px;
-    background-color: #ffffff;
-    border-right: 1px solid #e5e7eb;
-    padding: 1.5rem;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-  }
-  
-  .book-outline h2 {
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-    color: #111827;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .outline-tree {
-    font-size: 0.95rem;
-  }
-  
-  .empty-outline {
-    color: #6b7280;
-    font-size: 0.95rem;
-    margin: 0;
-    padding: 0.5rem;
-    background-color: #f9fafb;
-    border-radius: 4px;
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    max-height: 45vh;
   }
   
   .book-content {
-    flex: 1;
-    padding: 2rem;
-    overflow-y: auto;
-    background-color: #ffffff;
+    padding: 1.5rem;
   }
-  
-  .no-selection, .no-content {
-    display: flex;
-    height: 100%;
-    align-items: center;
-    justify-content: center;
-    color: #6b7280;
-    font-size: 1.1rem;
-    text-align: center;
-    padding: 2rem;
-  }
-  
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
-  
-  .loading-spinner {
-    font-size: 1.2rem;
-    color: #374151;
-    padding: 1rem 2rem;
-    border-radius: 8px;
-    background-color: white;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  }
-
-  @media (max-width: 768px) {
-    .book-view-container {
-      flex-direction: column;
-    }
-    
-    .book-sidebar {
-      width: 100%;
-      border-right: none;
-      border-bottom: 1px solid #e5e7eb;
-      max-height: 50vh;
-    }
-    
-    .book-content {
-      padding: 1rem;
-    }
-  }
+}
 </style>
 
 <!-- 页面主容器 -->
@@ -218,8 +356,8 @@
     <!-- 左侧边栏 - 书籍信息和大纲 -->
     <aside class="book-sidebar">
         <!-- 书籍信息 -->
-      <div class="book-meta rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm border border-blue-100">
-        <div class="p-4">
+      <div class="book-meta">
+        <div class="p-5">
           <h1 class="book-title text-xl font-bold text-gray-800 mb-1 line-clamp-2">
             《{bookTitle}》
           </h1>
