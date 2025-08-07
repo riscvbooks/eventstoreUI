@@ -27,10 +27,12 @@
    async function handleSetClickId(item) {
     globalClickId = item.id;
 
+    currentChapterContent = "";
    }
 
   function handleChapterSelect(item) {
     console.log('选中章节:', item);
+     
     get_chapter(bookId,item.id,(message) =>{
         if (message != "EOSE"){  
             currentChapterContent = message.data;
@@ -39,7 +41,29 @@
     })
   }
 
+ function findFirstChapterNode(items) {
+    for (const item of items) {
+      // 假设章节节点有 type: 'chapter' 属性，可根据实际结构调整
+      if (item.type === 'chapter' && item.id) {
+        return item;
+      }
+      // 如果有子节点，递归查找
+      if (item.children && item.children.length > 0) {
+        const found = findFirstChapterNode(item.children);
+        if (found) return found;
+      }
+    }
+    return null; // 未找到章节节点
+  }
 
+  function loadChapterContent(chapterId) {
+    
+    get_chapter(bookId, chapterId, (message) => {
+      if (message !== "EOSE" && message.data) {
+        currentChapterContent = message.data;
+      }  
+    });
+  }
 
     onMount(async () => {
 
@@ -64,12 +88,13 @@
                 break;
             }
         }
-        
+
         await get_chapter(bookId,"outline.md",function(message){
             if (message != "EOSE"){
                 
                 initialOutline = JSON.parse(message.data)
-                
+                let firstChapter = findFirstChapterNode(initialOutline)
+                if (firstChapter) loadChapterContent(firstChapter.id)
             }
         });
 
@@ -87,6 +112,7 @@
 </script>
 
 <style>
+  /* 保留原样式，移除与Tailwind冲突的部分 */
   .book-view-container {
     display: flex;
     min-height: 100vh;
@@ -94,7 +120,6 @@
     background-color: #f9fafb;
   }
   
-  /* 左侧边栏样式 */
   .book-sidebar {
     width: 320px;
     background-color: #ffffff;
@@ -104,41 +129,6 @@
     display: flex;
     flex-direction: column;
     gap: 2rem;
-  }
-  
-  .book-meta {
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 1rem;
-  }
-  
-  .book-title {
-    margin: 0 0 0.75rem 0;
-    font-size: 1.5rem;
-    color: #111827;
-    line-height: 1.3;
-  }
-  
-  .book-author {
-    margin: 0 0 1rem 0;
-    color: #6b7280;
-    font-size: 0.95rem;
-  }
-  
-  .book-description {
-    margin-top: 1rem;
-  }
-  
-  .book-description h3 {
-    margin: 0 0 0.5rem 0;
-    font-size: 1rem;
-    color: #374151;
-  }
-  
-  .book-description p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: #4b5563;
-    line-height: 1.6;
   }
   
   .book-outline h2 {
@@ -163,7 +153,6 @@
     border-radius: 4px;
   }
   
-  /* 右侧内容区样式 */
   .book-content {
     flex: 1;
     padding: 2rem;
@@ -182,7 +171,6 @@
     padding: 2rem;
   }
   
-  /* 加载和错误状态 */
   .loading-overlay {
     position: fixed;
     top: 0;
@@ -204,41 +192,7 @@
     background-color: white;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   }
-  
-  .error-container {
-    width: 100%;
-    padding: 2rem;
-    text-align: center;
-    color: #dc2626;
-  }
-  
-  .error-container h2 {
-    margin: 0 0 1rem 0;
-    font-size: 1.5rem;
-  }
-  
-  .error-container p {
-    margin: 0 0 1.5rem 0;
-    color: #4b5563;
-    font-size: 1.1rem;
-  }
-  
-  .retry-btn {
-    padding: 0.5rem 1rem;
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.2s;
-  }
-  
-  .retry-btn:hover {
-    background-color: #2563eb;
-  }
-  
-  /* 响应式调整 */
+
   @media (max-width: 768px) {
     .book-view-container {
       flex-direction: column;
@@ -257,19 +211,41 @@
   }
 </style>
 
-
 <!-- 页面主容器 -->
 <div class="book-view-container">
   <!-- 加载状态 -->
  
     <!-- 左侧边栏 - 书籍信息和大纲 -->
     <aside class="book-sidebar">
-      <div class="book-meta">
-        <h1 class="book-title">{bookTitle || "未知书名"}</h1>
-        <p class="book-author">作者: {bookAuthor|| "未知作者"}</p>
-
+        <!-- 书籍信息 -->
+      <div class="book-meta rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 shadow-sm border border-blue-100">
+        <div class="p-4">
+          <h1 class="book-title text-xl font-bold text-gray-800 mb-1 line-clamp-2">
+            《{bookTitle}》
+          </h1>
+          <p class="book-author text-sm text-gray-600 flex items-center">
+            <span class="inline-block w-1 h-1 rounded-full bg-gray-400 mr-1.5"></span>
+            作者: {bookAuthor}
+          </p>
+          
+          <!-- 装饰分隔线 -->
+          <div class="mt-3 h-px bg-gradient-to-r from-blue-200 to-transparent"></div>
+          
+          <!-- 章节数量统计 -->
+          {#if initialOutline.length > 0}
+            <div class="mt-3 text-xs text-gray-500">
+              共 {initialOutline.length} 个章节
+            </div>
+          {/if}
+        </div>
       </div>
       
+     <div class="flex items-center gap-2 my-1">
+        <div class="flex-1 h-px bg-gradient-to-r from-transparent to-gray-300"></div>
+        <div class="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+        <div class="flex-1 h-px bg-gradient-to-l from-transparent to-gray-300"></div>
+    </div>
+
       <div class="book-outline">
         <h2>目录</h2>
         {#if initialOutline.length > 0}
@@ -292,7 +268,7 @@
         <ViewMD mdcontent={currentChapterContent} />
       {:else if initialOutline.length > 0}
         <div class="no-selection">
-          <p>请从左侧目录选择章节查看内容</p>
+          <p>作者正在快速赶工中，耐心等待...</p>
         </div>
       {:else}
         <div class="no-content">
