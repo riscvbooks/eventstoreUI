@@ -646,7 +646,7 @@
         toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", 
         "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide", insertImageButton, '|',],
         // 添加编辑器高度配置（部分主题可能需要）
-    
+        autosize: false,
       });
       
       
@@ -664,6 +664,7 @@
           updateStats();
           
         }
+        simplemde.refresh();
       });
       
       return simplemde;
@@ -1041,7 +1042,7 @@
         </div>
       </div>
       
-      <div class="flex-grow flex flex-col">
+      <div class="flex-grow flex flex-col editor-wrapper">
         <div class="bg-gray-50 p-3 flex items-center justify-between">
           <div class="flex items-center gap-4">
             <span id="wordCount" class="text-sm text-gray-600 flex items-center">
@@ -1057,7 +1058,9 @@
         <!-- 编辑器区域 -->
         <div id="editor-container" class="flex-grow p-4">
           <textarea id="editor"></textarea>
+          
         </div>
+        
       </div>
     </div>
   </div>

@@ -254,27 +254,30 @@
     border-radius: 0.5rem;
     overflow: hidden;
   }
-  /* CodeMirror样式调整 */
+  /* 添加以下新样式 */
+  #editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* 占据父容器所有可用空间 */
+    min-height: 0; /* 允许在flex容器内收缩 */
+  }
+  
   .CodeMirror {
-    min-height: 300px;
-    font-family: monospace;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    height: auto;
+    flex: 1; /* 占据剩余空间 */
+    min-height: 300px; /* 最小高度 */
+    height: auto !important; /* 覆盖内联高度 */
   }
-  .CodeMirror-linenumber {
-    padding: 0 8px;
-    color: #9CA3AF;
-    background-color: #F9FAFB;
+  
+  .CodeMirror-scroll {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    max-height: calc(100vh - 200px); /* 根据视口动态调整最大高度 */
   }
-  .CodeMirror-gutters {
-    border-right: 1px solid #E5E7EB;
-    background-color: #F9FAFB;
-  }
-  .CodeMirror-activeline-gutter .CodeMirror-linenumber {
-    background-color: rgba(79, 70, 229, 0.05);
-    color: #4F46E5;
-    font-weight: 500;
+  
+  .editor-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 85%;
   }
   .error-message {
     color: #EF4444;
@@ -345,3 +348,5 @@
   border: 4px solid transparent;
   border-top-color: #333;
 }
+
+ 
