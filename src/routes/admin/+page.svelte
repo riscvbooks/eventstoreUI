@@ -7,6 +7,8 @@
     add_permission,
     delete_user,
     delete_event,
+    user_counts,
+    event_counts,
   } from '$lib/esclient';
  
   import {WebStorage} from '$lib/WebStorage'
@@ -39,6 +41,8 @@
  
 
   let events      = [];
+  let eventTotal = 0;
+  let userTotal = 0;
   let users       = [];
   let permissions = [];
 
@@ -73,20 +77,24 @@
   }
 
 
-  function handle_users(e){
+
+  async function handle_users(e){
     let temp = users;
-    temp.push(e)
-    users = [...temp]
-     
+    if (e != "EOSE")
+      temp.push(e)
+    else {
+      users = [...temp]
+      let pubkeys = users.map(user => user.pubkey);
+      permissions = []
+      await get_permissions(pubkeys,message =>{
+          let temp = permissions;
+          temp.push(message)
+          permissions  = [...temp]
+      })
+    }
   }
 
-  function handle_permissions(e){
-    
-    let temp = permissions;
-    temp.push(e);
-    permissions = [...temp];
-     
-  }
+ 
 
   function deleteUser (pubkey){
     let adminpubkey = Keypub;
@@ -102,7 +110,7 @@
     });
   }
 
-    function deleteEvent (EventId){
+  function deleteEvent (EventId){
     let adminpubkey = Keypub;
     let adminprivkey = Keypriv;
     delete_event(EventId,adminpubkey,adminprivkey,function(message) {
@@ -115,6 +123,99 @@
       }
     });
   }
+
+  let event_start_page = 1;
+  let event_current_page = 1;
+  async function get_events_page(page,ops){
+    let oldpage = event_current_page; 
+    if (page){
+      event_current_page = page;
+
+    } else {
+    
+      if (ops == 1) {
+        //next 
+        if (event_current_page - event_start_page >= 3){
+          event_start_page += 1;
+        }
+        event_current_page += 1;
+
+      }
+
+      if (ops == -1) {
+        //next 
+        if (event_current_page - event_start_page < 0 && event_start_page > 0 ){
+          event_start_page -= 1;
+        }
+        event_current_page -= 1;        
+      }
+
+    } 
+    if (event_current_page > Math.floor(eventTotal/10) + 1){
+          event_current_page = Math.floor(eventTotal/10) + 1;
+    }
+
+    if (event_current_page < 0) event_current_page = 0;
+
+    if (oldpage != event_current_page){
+        events = [];
+        await get_events(Keypub,Keypriv,event_current_page * 10 ,10,handle_events);
+    }
+
+  }
+
+  // 分页状态变量（页码从1开始）
+let userStartPage = 1;       // 起始显示页码
+let userCurrentPage = 1;     // 当前页码
+             
+ 
+async function fetchUsersByPage(page = null, ops = 0) {
+    const oldPage = userCurrentPage;
+    
+    // 处理直接指定页码的情况
+    if (page !== null) {
+ 
+        userCurrentPage = page;
+    } 
+    // 处理上下页操作
+    else {
+        // 下一页操作
+        if (ops === 1) {
+            // 当当前页与起始页差值≥3时，起始页同步推进
+            if (userCurrentPage - userStartPage >= 3) {
+                userStartPage++;
+            }
+            userCurrentPage++;
+        }
+        // 上一页操作
+        else if (ops === -1) {
+            // 当当前页小于起始页且起始页>1时，起始页同步后退
+            if (userCurrentPage < userStartPage && userStartPage > 1) {
+                userStartPage--;
+            }
+            userCurrentPage--;
+        }
+    }
+
+    // 计算最大可访问页码（总用户数/每页条数，向上取整）
+    const maxPage = Math.ceil(userTotal / 10) || 1;
+    
+    // 限制当前页在有效范围内（1 ~ 最大页码）
+    if (userCurrentPage > maxPage) {
+        userCurrentPage = maxPage;
+    } else if (userCurrentPage < 1) {
+        userCurrentPage = 1;
+    }
+
+    // 页码变化时重新加载数据
+    if (oldPage !== userCurrentPage) {
+        users = [];  // 清空当前页数据
+        // 计算偏移量（MongoDB的skip参数从0开始，页码从1开始需减1）
+        const offset = (userCurrentPage - 1) * 10;
+        await get_users( offset, 10, handle_users);
+    }
+  }
+
 
   let saveCb = ()=>{} ;
   function saveEvent (data){
@@ -286,13 +387,22 @@
       document.getElementById('adminContent').classList.remove('hidden');
     }
 
-    await get_events(Keypub,Keypriv,handle_events);
+    await get_events(Keypub,Keypriv,0,10,handle_events);
 
-    await get_users(handle_users);
+    await get_users(0,10,handle_users);
 
-    await get_permissions(handle_permissions);
+  
 
-    
+    await user_counts( message=>{
+      if (message != "EOSE")
+        userTotal = message.counts;
+    })
+
+    await event_counts( message=>{
+      if (message != "EOSE")
+        eventTotal = message.counts;
+    })
+
     setupSidebar();
      
   })
@@ -524,13 +634,13 @@
           <a href="#users" class="sidebar-active flex items-center px-4 py-3 rounded-lg transition-colors">
             <i class="fa fa-users w-5 text-center mr-3 text-primary"></i>
             <span>Users</span>
-            <span class="ml-auto bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">{users.length}</span>
+            <span class="ml-auto bg-primary/10 text-primary text-xs font-medium px-2 py-0.5 rounded-full">{userTotal}</span>
           </a>
           
           <a href="#events" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
             <i class="fa fa-calendar w-5 text-center mr-3 text-gray-500"></i>
             <span>Events</span>
-            <span class="ml-auto bg-warning/10 text-warning text-xs font-medium px-2 py-0.5 rounded-full">{events.length}</span>
+            <span class="ml-auto bg-warning/10 text-warning text-xs font-medium px-2 py-0.5 rounded-full">{eventTotal}</span>
           </a>
           
           <a href="#permissions" class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
@@ -798,27 +908,39 @@
             <div class="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200">
               <div class="mb-4 sm:mb-0">
                 <p class="text-sm text-gray-700">
-                  Showing <span class="font-medium">1</span> to <span class="font-medium">7</span> of <span class="font-medium">142</span> users
+                  Showing <span class="font-medium">1</span> to <span class="font-medium">{Math.floor(userTotal/10) + 1}</span> of <span class="font-medium">{userTotal}</span> users
                 </p>
               </div>
               <div class="flex items-center space-x-2">
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="b">
-                  Previous
-                </button>
-                
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium" aria-label="b">
-                  1
-                </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="b">
-                  2
-                </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="b">
-                  3
-                </button>
-                
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="b">
-                  Next
-                </button>
+                  <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" 
+                          aria-label="page" 
+                          on:click={fetchUsersByPage(null, -1)}>
+                    Previous
+                  </button>
+
+                  <button class="w-8 h-8 flex items-center justify-center rounded-lg {userCurrentPage == userStartPage + 1 ? "bg-primary text-white" : "text-gray-700"} text-sm font-medium" 
+                          aria-label="page" 
+                          on:click={fetchUsersByPage(userStartPage + 1)}>
+                    {userStartPage + 1}
+                  </button>
+
+                  <button class="w-8 h-8 flex items-center justify-center rounded-lg {userCurrentPage == userStartPage + 2 ? "bg-primary text-white" : "text-gray-700"} hover:bg-gray-100 text-sm font-medium" 
+                          aria-label="page" 
+                          on:click={fetchUsersByPage(userStartPage + 2)}>
+                    {userStartPage + 2}
+                  </button>
+
+                  <button class="w-8 h-8 flex items-center justify-center rounded-lg {userCurrentPage == userStartPage + 3 ? "bg-primary text-white" : "text-gray-700"} hover:bg-gray-100 text-sm font-medium" 
+                          aria-label="page" 
+                          on:click={fetchUsersByPage(userStartPage + 3)}>
+                    {userStartPage + 3}
+                  </button>
+
+                  <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" 
+                          aria-label="next" 
+                          on:click={fetchUsersByPage(null, 1)}>
+                    Next
+                  </button>
               </div>
             </div>
           </div>
@@ -949,25 +1071,25 @@
             <div class="bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between border-t border-gray-200">
               <div class="mb-4 sm:mb-0">
                 <p class="text-sm text-gray-700">
-                  Showing <span class="font-medium">1</span> to <span class="font-medium">4</span> of <span class="font-medium">87</span> events
+                  Showing <span class="font-medium">1</span> to <span class="font-medium">{Math.floor(eventTotal/10) + 1}</span> of <span class="font-medium">{eventTotal}</span> events
                 </p>
               </div>
               <div class="flex items-center space-x-2">
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="page">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="page" on:click={get_events_page(0,-1)}>
                   Previous
                 </button>
                 
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium" aria-label="page">
-                  1
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg {event_current_page == event_start_page +1 ? "bg-primary text-white":"text-gray-700"}  text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+1)}>
+                  {event_start_page + 1 }
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="page">
-                  2
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page +2 ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+2)}>
+                   {event_start_page + 2 }
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 text-sm font-medium" aria-label="page">
-                  3
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page +3 ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+3)}>
+                   {event_start_page + 3 }
                 </button>
                 
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="next">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="next" on:click={get_events_page(0,1)}>
                   Next
                 </button>
               </div>

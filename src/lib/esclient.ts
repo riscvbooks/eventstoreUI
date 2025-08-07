@@ -31,7 +31,7 @@ export async function create_user(email,pubkey,privkey,callback){
     });  
 }
 
-export async function get_events(pubkey,privkey,callback){
+export async function get_events(pubkey,privkey,offset,limit,callback){
     await client.connect().catch(error => {});
 
     let event = {    
@@ -40,6 +40,8 @@ export async function get_events(pubkey,privkey,callback){
         "user": pubkey,
         "status":0,
         "eventcode":0,
+        'offset':offset,
+        'limit':limit,
       }
       client.subscribe(secureEvent(event,privkey),function(message){
          
@@ -48,27 +50,31 @@ export async function get_events(pubkey,privkey,callback){
       });      
 }
 
-export async function get_users(callback){
+export async function get_users(offset,limit,callback){
     await client.connect().catch(error => {});
 
     let event = {    
         "ops": "R",
         "code": 103,
+        offset,
+        limit
       }
       client.subscribe(event,function(message){
          
         if (message[2] == "EOSE") client.unsubscribe(message[1]);
-        else callback(message[2])
+        
+        callback(message[2])
       });      
 }
 
 
-export async function get_permissions(callback){
+export async function get_permissions(pubkeys,callback){
     await client.connect().catch(error => {});
 
     let event = {    
         "ops": "R",
         "code": 303,
+        "data":{"pubkeys":pubkeys}
       }
       client.subscribe(event,function(message){
          
@@ -263,6 +269,34 @@ export async function get_chapter(bookId,name,callback){
   
   client.subscribe(event,function(message){
          
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
+}
+
+export async function user_counts(callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+    "ops": "R",
+    "code": 104,
+  }
+  client.subscribe(event,function(message){
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
+}
+
+export async function event_counts(callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+    "ops": "R",
+    "code": 204,
+  }
+  client.subscribe(event,function(message){
     if (message[2] == "EOSE") client.unsubscribe(message[1]);
     
     callback(message[2])
