@@ -124,44 +124,54 @@
     });
   }
 
-  let event_start_page = 1;
-  let event_current_page = 1;
-  async function get_events_page(page,ops){
-    let oldpage = event_current_page; 
-    if (page){
-      event_current_page = page;
+let event_start_page = 1;
+let event_current_page = 1;
 
+async function get_events_page(page, ops) {
+    let oldpage = event_current_page;
+    const maxPage = eventTotal > 0 ? Math.ceil(eventTotal / 10) : 1;
+
+    if (page) {
+      // 校验page合法性：必须是正整数且不超过最大页码
+      if (typeof page !== 'number' || page < 1 || page > maxPage) {
+        console.warn('无效页码');
+        return;
+      }
+      event_current_page = page;
     } else {
-    
-      if (ops == 1) {
-        //next 
-        if (event_current_page - event_start_page >= 3){
+      // 下一页操作
+      if (ops === 1) {
+        // 当当前页超过显示的最大页码（start+2）时，起始页推进1
+        // （因为按钮显示start、start+1、start+2，共3个页码）
+        if (event_current_page > event_start_page + 2) {
           event_start_page += 1;
         }
         event_current_page += 1;
-
       }
-
-      if (ops == -1) {
-        //next 
-        if (event_current_page - event_start_page < 0 && event_start_page > 0 ){
+      // 上一页操作
+      else if (ops === -1) {
+        // 当当前页小于显示的最小页码（start）时，起始页后退1
+        if (event_current_page < event_start_page && event_start_page > 1) {
           event_start_page -= 1;
         }
-        event_current_page -= 1;        
+        event_current_page -= 1;
       }
-
-    } 
-    if (event_current_page > Math.floor(eventTotal/10) + 1){
-          event_current_page = Math.floor(eventTotal/10) + 1;
     }
 
-    if (event_current_page < 0) event_current_page = 0;
-
-    if (oldpage != event_current_page){
-        events = [];
-        await get_events(Keypub,Keypriv,event_current_page * 10 ,10,handle_events);
+    // 限制当前页在有效范围（1 ~ 最大页码）
+    if (event_current_page > maxPage) {
+      event_current_page = maxPage;
+    } else if (event_current_page < 1) {
+      event_current_page = 1;
     }
 
+    // 页码变化且有数据时，重新加载
+    if (oldpage !== event_current_page && eventTotal > 0) {
+      events = [];
+      await get_events(Keypub, Keypriv, (event_current_page - 1) * 10, 10, handle_events);
+    } else if (eventTotal === 0) {
+      events = [];
+    }
   }
 
   // 分页状态变量（页码从1开始）
@@ -1075,21 +1085,21 @@ async function fetchUsersByPage(page = null, ops = 0) {
                 </p>
               </div>
               <div class="flex items-center space-x-2">
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="page" on:click={get_events_page(0,-1)}>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50" aria-label="page"  on:click={() => get_events_page(null, -1)}>
                   Previous
                 </button>
                 
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg {event_current_page == event_start_page +1 ? "bg-primary text-white":"text-gray-700"}  text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+1)}>
-                  {event_start_page + 1 }
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg {event_current_page == event_start_page   ? "bg-primary text-white":"text-gray-700"}  text-sm font-medium" aria-label="page" on:click={ () =>get_events_page(event_start_page)}>
+                  {event_start_page  }
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page +2 ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+2)}>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page + 1   ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={() =>get_events_page(event_start_page+1)}>
+                   {event_start_page + 1 }
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page + 2  ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={() =>get_events_page(event_start_page+2)}>
                    {event_start_page + 2 }
                 </button>
-                <button class="w-8 h-8 flex items-center justify-center rounded-lg  {event_current_page == event_start_page +3 ? "bg-primary text-white":"text-gray-700"}  hover:bg-gray-100 text-sm font-medium" aria-label="page" on:click={get_events_page(event_start_page+3)}>
-                   {event_start_page + 3 }
-                </button>
                 
-                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="next" on:click={get_events_page(0,1)}>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50" aria-label="next"  on:click={() => get_events_page(null, 1)}>
                   Next
                 </button>
               </div>
