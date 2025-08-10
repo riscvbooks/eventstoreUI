@@ -2,14 +2,39 @@
   import { onMount } from 'svelte';
   import {getKey} from "$lib/getkey";
   import {uploadpath} from "$lib/config";
+  import {WebStorage} from '$lib/WebStorage'
 
   let Keypriv;
   let Keypub;
-  let showLogin = true;
-  let emailInput;
-  let privateKeyInput;
-  let isNewAccount = false;
+ 
+  let showConfirmModal = false;
+  let confirmMessage   = "";
+  let confirmcallback  = "";
    
+
+  const Logout = ()=> {
+    let storage = new WebStorage(localStorage);
+    storage.remove("keyPriv");
+    window.location.reload();
+
+  }
+    function LogoutClick (){
+        confirmMessage = `注销登录将会删除本地私钥，一旦删除将无法通过任何途径恢复，请确保已经保存后点击确认\n`;
+        showConfirmModal = true; // 显示自定义模态框
+        confirmcallback = function(result){
+            if (result){
+                Logout();
+            }
+            confirmcallback = "";
+            showConfirmModal = false;
+        } 
+    }
+
+  function handleConfirm(confirmed) {
+       confirmcallback(confirmed);
+  }
+  
+
   onMount(async () => {
     // 加载CodeMirror库
         let Key = getKey();
@@ -42,8 +67,7 @@
         });
         });
         
-        // 初始化第一个标签为激活状态
-        document.querySelector('.tab-button').click();
+ 
   })
 
   </script>
@@ -229,7 +253,7 @@
               <p class="text-xs text-gray-500">高级创作者</p>
             </div>
           </div>
-          <a href="#" class="text-gray-500 hover:text-primary">
+          <a href="#" class="text-gray-500 hover:text-primary" on:click={LogoutClick}>
             <i class="fas fa-sign-out-alt"></i>
           </a>
         </div>
@@ -635,3 +659,25 @@
   </div>
   
 
+{#if showConfirmModal}
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+      <h3 class="text-xl font-bold mb-4 text-primary">提示</h3>
+      <p class="text-gray-700 mb-6 whitespace-pre-line">{confirmMessage}</p>
+      <div class="flex justify-end gap-3">
+        <button 
+          class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-100 transition"
+          on:click={() => handleConfirm(false)}
+        >
+          取消
+        </button>
+        <button 
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition"
+          on:click={() => handleConfirm(true)}
+        >
+          确定
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}

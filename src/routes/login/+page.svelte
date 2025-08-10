@@ -36,7 +36,19 @@
     // 3秒后自动隐藏
     setTimeout(() => {
       showToast = false;
-    }, 3000);
+    }, 1000);
+  }
+
+  function getFrom( ) {
+      let url;
+ 
+      url = new URL(window.location.href);
+ 
+      
+      // 从查询参数中获取bookid（searchParams是处理URL查询参数的API）
+      let value = url.searchParams.get('from');
+      
+      return value; // 如果不存在会返回null
   }
 
   const generateKey = () => {
@@ -78,7 +90,7 @@
           storage.set("keyPriv", Keypriv);
           showToastMessage(message[2].message);
           setTimeout(() => {
-             
+             window.location.href = getFrom()
           }, 1000);
           
         } else {
@@ -97,7 +109,7 @@
       storage.set("keyPriv", Keypriv);
       showToastMessage("登录成功！")
       setTimeout(() => {
-             window.location.reload();
+              window.location.href = getFrom()
           }, 1000);
     }
 
