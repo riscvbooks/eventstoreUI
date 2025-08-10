@@ -1,0 +1,637 @@
+<script>
+  import { onMount } from 'svelte';
+  import {getKey} from "$lib/getkey";
+  import {uploadpath} from "$lib/config";
+
+  let Keypriv;
+  let Keypub;
+  let showLogin = true;
+  let emailInput;
+  let privateKeyInput;
+  let isNewAccount = false;
+   
+  onMount(async () => {
+    // 加载CodeMirror库
+        let Key = getKey();
+        
+        Keypriv = Key.Keypriv;
+        Keypub = Key.Keypub;
+        if (!Keypriv){
+            window.location.href="/login?from=/creator";
+             
+        }
+
+        // 简单的标签切换功能
+        document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+            // 移除所有激活状态
+            document.querySelectorAll('.tab-button').forEach(btn => {
+            btn.classList.remove('active-tab');
+            });
+            
+            // 添加当前激活状态
+            button.classList.add('active-tab');
+            
+            // 更新指示器位置
+            const indicator = document.querySelector('.tab-indicator');
+            const buttonRect = button.getBoundingClientRect();
+            const containerRect = button.parentElement.getBoundingClientRect();
+            
+            indicator.style.width = `${buttonRect.width}px`;
+            indicator.style.transform = `translateX(${buttonRect.left - containerRect.left}px)`;
+        });
+        });
+        
+        // 初始化第一个标签为激活状态
+        document.querySelector('.tab-button').click();
+  })
+
+  </script>
+
+  <style>
+   
+    
+    body {
+      font-family: 'Noto Serif SC', serif;
+      background-color: #F3F4F6;
+      color: #1F2937;
+    }
+    
+    .sidebar {
+      transition: all 0.3s ease;
+    }
+    
+    .editor-toolbar {
+      background: linear-gradient(to bottom, #F9FAFB, #E5E7EB);
+    }
+    
+    .content-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .content-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .markdown-body {
+      font-family: 'Noto Serif SC', serif;
+      line-height: 1.8;
+      font-size: 17px;
+    }
+    
+    .markdown-body h1, .markdown-body h2, .markdown-body h3 {
+      font-weight: 700;
+      margin-top: 1.5em;
+      margin-bottom: 0.8em;
+      color: #1F2937;
+    }
+    
+    .markdown-body h1 {
+      font-size: 2.2rem;
+      border-bottom: 2px solid #E5E7EB;
+      padding-bottom: 0.3em;
+    }
+    
+    .markdown-body h2 {
+      font-size: 1.8rem;
+    }
+    
+    .markdown-body h3 {
+      font-size: 1.5rem;
+    }
+    
+    .markdown-body p {
+      margin-bottom: 1.2em;
+    }
+    
+    .markdown-body blockquote {
+      border-left: 4px solid #4F46E5;
+      padding: 0 1em;
+      color: #4B5563;
+      margin: 1.5em 0;
+    }
+    
+    .active-tab {
+      background: linear-gradient(to right, #4F46E5, #7C3AED);
+      color: white;
+      box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+    }
+    
+    .tab-indicator {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      background: linear-gradient(to right, #4F46E5, #7C3AED);
+      transition: all 0.3s ease;
+    }
+    
+    .editor-content {
+      min-height: 500px;
+      border: 1px solid #E5E7EB;
+    }
+    
+    .editor-content:focus {
+      outline: none;
+      border-color: #4F46E5;
+    }
+  </style>
+ 
+ 
+  <div class="flex min-h-screen">
+    <!-- 侧边栏 -->
+    <div class="sidebar w-64 bg-white shadow-lg fixed h-full">
+      <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-purple-600 flex items-center justify-center text-white font-bold text-xl">创</div>
+          <div class="ml-3">
+            <h2 class="font-bold text-gray-800">我的创作空间</h2>
+            <p class="text-sm text-gray-500">作者: 张创作</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="py-4">
+        <div class="px-4 mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">创作中心</p>
+        </div>
+        
+        <ul>
+          <li>
+            <a href="#" class="active-tab flex items-center px-4 py-3">
+              <i class="fas fa-home w-5 text-center mr-3"></i>
+              <span>概览</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-blog w-5 text-center mr-3"></i>
+              <span>博客管理</span>
+              <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">12</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-book w-5 text-center mr-3"></i>
+              <span>书籍管理</span>
+              <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">3</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-cog w-5 text-center mr-3"></i>
+              <span>页面设置</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-chart-line w-5 text-center mr-3"></i>
+              <span>数据统计</span>
+            </a>
+          </li>
+        </ul>
+        
+        <div class="px-4 mt-8 mb-4">
+          <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">创作工具</p>
+        </div>
+        
+        <ul>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-plus-circle w-5 text-center mr-3 text-green-500"></i>
+              <span>新建博客</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-book-medical w-5 text-center mr-3 text-blue-500"></i>
+              <span>新建书籍</span>
+            </a>
+          </li>
+          <li>
+            <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+              <i class="fas fa-folder-plus w-5 text-center mr-3 text-yellow-500"></i>
+              <span>新建文集</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-gray-50">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <i class="fas fa-user text-primary"></i>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm font-medium text-gray-900">张创作</p>
+              <p class="text-xs text-gray-500">高级创作者</p>
+            </div>
+          </div>
+          <a href="#" class="text-gray-500 hover:text-primary">
+            <i class="fas fa-sign-out-alt"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主内容区 -->
+    <main class="flex-1 ml-64 p-8">
+      <!-- 顶部统计卡片 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mr-4">
+              <i class="fas fa-file-alt text-blue-500 text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-sm text-gray-500">博客文章</h3>
+              <p class="text-2xl font-bold text-gray-800">12 篇</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+              <span>已发布</span>
+              <span>8</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-500 h-2 rounded-full" style="width: 66%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mr-4">
+              <i class="fas fa-book text-green-500 text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-sm text-gray-500">书籍作品</h3>
+              <p class="text-2xl font-bold text-gray-800">3 本</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+              <span>已完成</span>
+              <span>1</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-green-500 h-2 rounded-full" style="width: 33%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-sm p-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mr-4">
+              <i class="fas fa-eye text-purple-500 text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-sm text-gray-500">今日阅读</h3>
+              <p class="text-2xl font-bold text-gray-800">1,258 次</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <div class="flex justify-between text-sm text-gray-600 mb-1">
+              <span>总阅读量</span>
+              <span>28.9K</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-purple-500 h-2 rounded-full" style="width: 45%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- 博客编辑器 -->
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div class="border-b border-gray-200 px-6 py-4">
+            <h2 class="text-xl font-bold text-gray-800">创作新博客</h2>
+            <p class="text-gray-600 text-sm">撰写并发布新的博客文章</p>
+          </div>
+          
+          <div class="p-6">
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">文章标题</label>
+              <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" placeholder="输入文章标题...">
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">文章分类</label>
+              <div class="flex flex-wrap gap-2">
+                <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">技术</span>
+                <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">生活</span>
+                <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">旅行</span>
+                <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">读书</span>
+                <button class="text-primary text-sm">
+                  <i class="fas fa-plus mr-1"></i> 添加分类
+                </button>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-2">文章封面</label>
+              <div class="flex items-center">
+                <div class="w-16 h-16 bg-gray-200 border-2 border-dashed rounded-xl flex items-center justify-center text-gray-400">
+                  <i class="fas fa-image"></i>
+                </div>
+                <button class="ml-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
+                  <i class="fas fa-upload mr-2"></i> 上传封面
+                </button>
+              </div>
+            </div>
+            
+            <div class="mb-6">
+              <div class="editor-toolbar flex items-center border border-gray-300 rounded-t-lg p-2">
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-heading"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-bold"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-italic"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-list-ul"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-link"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-200 rounded">
+                  <i class="fas fa-image"></i>
+                </button>
+                <div class="ml-auto">
+                  <button class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm">
+                    <i class="fas fa-eye mr-1"></i> 预览
+                  </button>
+                </div>
+              </div>
+              <div 
+                contenteditable="true" 
+                class="editor-content p-4 rounded-b-lg bg-white"
+                placeholder="在此撰写您的博客内容..."
+              ><h1>欢迎使用创作中心</h1><p>在这里，您可以创作博客文章、编写书籍，并管理您的所有内容。</p><p>请开始撰写您的第一篇博客吧！</p></div>
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+              <button class="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50">
+                保存草稿
+              </button>
+              <button class="px-6 py-2.5 bg-gradient-to-r from-primary to-purple-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg">
+                发布文章
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 内容管理 -->
+        <div class="space-y-8">
+          <!-- 近期博客 -->
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-200 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800">近期博客</h2>
+                <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
+              </div>
+            </div>
+            
+            <div class="p-6">
+              <div class="space-y-4">
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                      <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80" alt="Blog cover" class="w-full h-full object-cover">
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">现代前端开发实践指南</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>技术 · 2023-10-15</span>
+                        <span class="mx-2">|</span>
+                        <span><i class="fas fa-eye mr-1"></i> 1,258</span>
+                      </div>
+                    </div>
+                    <div class="ml-auto flex items-center">
+                      <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">已发布</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex space-x-2">
+                    <button class="text-sm text-gray-600 hover:text-primary">
+                      <i class="fas fa-edit mr-1"></i> 编辑
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-red-500">
+                      <i class="fas fa-trash-alt mr-1"></i> 删除
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-green-500">
+                      <i class="fas fa-chart-line mr-1"></i> 数据
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                      <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80" alt="Blog cover" class="w-full h-full object-cover">
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">自然摄影的艺术与技巧</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>摄影 · 2023-10-10</span>
+                        <span class="mx-2">|</span>
+                        <span><i class="fas fa-eye mr-1"></i> 892</span>
+                      </div>
+                    </div>
+                    <div class="ml-auto flex items-center">
+                      <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">草稿</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex space-x-2">
+                    <button class="text-sm text-gray-600 hover:text-primary">
+                      <i class="fas fa-edit mr-1"></i> 编辑
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-red-500">
+                      <i class="fas fa-trash-alt mr-1"></i> 删除
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-green-500">
+                      <i class="fas fa-chart-line mr-1"></i> 数据
+                    </button>
+                  </div>
+                </div>
+                
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
+                      <img src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80" alt="Blog cover" class="w-full h-full object-cover">
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">探索未知：我的荒野之旅</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>旅行 · 2023-10-05</span>
+                        <span class="mx-2">|</span>
+                        <span><i class="fas fa-eye mr-1"></i> 2,451</span>
+                      </div>
+                    </div>
+                    <div class="ml-auto flex items-center">
+                      <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">已发布</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 flex space-x-2">
+                    <button class="text-sm text-gray-600 hover:text-primary">
+                      <i class="fas fa-edit mr-1"></i> 编辑
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-red-500">
+                      <i class="fas fa-trash-alt mr-1"></i> 删除
+                    </button>
+                    <button class="text-sm text-gray-600 hover:text-green-500">
+                      <i class="fas fa-chart-line mr-1"></i> 数据
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 我的书籍 -->
+          <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="border-b border-gray-200 px-6 py-4">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-800">我的书籍</h2>
+                <a href="#" class="text-primary text-sm hover:underline">新建书籍</a>
+              </div>
+            </div>
+            
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white">
+                      <i class="fas fa-book text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">JavaScript高级程序设计</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>技术 · 12章</span>
+                        <span class="mx-2">|</span>
+                        <span>已完成 65%</span>
+                      </div>
+                      <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full" style="width: 65%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-20 bg-gradient-to-br from-green-500 to-teal-600 rounded-lg flex items-center justify-center text-white">
+                      <i class="fas fa-book text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">摄影的艺术与灵魂</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>摄影 · 8章</span>
+                        <span class="mx-2">|</span>
+                        <span>已完成 30%</span>
+                      </div>
+                      <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: 30%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex">
+                    <div class="flex-shrink-0 w-16 h-20 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-lg flex items-center justify-center text-white">
+                      <i class="fas fa-book text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                      <h3 class="font-bold text-gray-800">世界美食之旅</h3>
+                      <div class="flex items-center mt-1 text-sm text-gray-500">
+                        <span>美食 · 15章</span>
+                        <span class="mx-2">|</span>
+                        <span>已完成 10%</span>
+                      </div>
+                      <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 10%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+                  <div class="flex items-center justify-center h-full">
+                    <button class="flex flex-col items-center text-gray-400 hover:text-primary">
+                      <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-2">
+                        <i class="fas fa-plus text-xl"></i>
+                      </div>
+                      <span>新建书籍</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 页面设置 -->
+      <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="border-b border-gray-200 px-6 py-4">
+          <h2 class="text-xl font-bold text-gray-800">个人页面设置</h2>
+          <p class="text-gray-600 text-sm">自定义您的个人主页展示</p>
+        </div>
+        
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">个人简介</label>
+                <textarea 
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" 
+                  rows="4" 
+                  placeholder="介绍一下自己，让读者更了解您..."
+                >我是张创作，一位热爱技术和写作的开发者。专注于前端开发和用户体验设计，喜欢分享知识和经验。</textarea>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">用户名</label>
+                  <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value="张创作">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">职业</label>
+                  <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" value="高级前端工程师">
+                </div>
+              </div>
+              
+ 
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">个人头像</label>
+              <div class="flex flex-col items-center">
+                <div class="w-32 h-32 rounded-full bg-gray-200 border-2 border-dashed rounded-full overflow-hidden mb-4">
+                  <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=80" alt="Avatar" class="w-full h-full object-cover">
+                </div>
+                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200">
+                  <i class="fas fa-upload mr-2"></i> 更换头像
+                </button>
+                <p class="text-xs text-gray-500 mt-3 text-center">支持 JPG、PNG 格式<br>建议尺寸 400×400 像素</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-8 flex justify-end">
+            <button class="px-6 py-2.5 bg-gradient-to-r from-primary to-purple-600 text-white rounded-lg font-medium shadow-md hover:shadow-lg">
+              保存设置
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+
