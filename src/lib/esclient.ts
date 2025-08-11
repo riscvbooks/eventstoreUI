@@ -302,3 +302,42 @@ export async function event_counts(callback){
     callback(message[2])
   });  
 }
+
+export async function save_user_profile(profile,pubkey,privkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+    "ops": "C",
+    "code": 200,
+    "user": pubkey,
+    "data": JSON.stringify(profile),
+    "tags":[ ['d','profile'] ]
+  }
+  let sevent = secureEvent(event,privkey);
+  client.publish(sevent,function(message){
+      if (message[2] != "EOSE")
+        callback(message[2]);
+  });
+
+}
+
+export async function get_user_profile(pubkey,callback){
+  await client.connect().catch(error => {console.log(error)});
+ 
+ 
+  let event = {
+  
+    "ops": "R",
+    "code": 203,
+    "eventuser": pubkey,
+    "tags":[ ['d','profile'] ]
+  }
+  
+  client.subscribe(event,function(message){
+  
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    else callback(message[2])
+  });
+
+}
