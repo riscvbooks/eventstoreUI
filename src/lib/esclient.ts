@@ -194,7 +194,7 @@ export async function get_books(callback){
   
   await client.connect().catch(error => {});
   
-  if (client.connected == false) return ;
+ 
 
   let event = {
   
@@ -214,7 +214,7 @@ export async function get_book_id(bookid,callback){
   
   await client.connect().catch(error => {});
   
-  if (client.connected == false) return ;
+ 
 
   let event = [{
       "ops": "R",
@@ -340,4 +340,64 @@ export async function get_user_profile(pubkey,callback){
     else callback(message[2])
   });
 
+}
+
+export async function create_blog(content,pubkey,privkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "C",
+      "code": 200,
+      "user": pubkey,
+      "data": content,
+      "tags":[ ['t','create_blog'], ]
+    }
+  let sevent = secureEvent(event,privkey);
+  client.publish(sevent,function(message){
+      callback(message[2]);
+  });  
+}
+
+export async function get_blog_id(blogid,callback){
+  
+  await client.connect().catch(error => {});
+  
+ 
+
+  let event = {
+      "ops": "R",
+      "code": 203,
+      "tags":[ ['t','create_blog'], ],
+      "eventid":blogid,
+    }
+ 
+  client.subscribe(event,function(message){
+         
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      
+      callback(message[2])
+    }); 
+}
+
+export async function get_blogs(pubkey,callback){
+  
+  await client.connect().catch(error => {});
+  
+ 
+
+  let event = {
+      "ops": "R",
+      "code": 203,
+      "tags":[ ['t','create_blog'], ],
+    };
+  
+  if (pubkey) event['eventuser'] = pubkey;
+  
+  client.subscribe(event,function(message){
+         
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      
+      callback(message[2])
+    }); 
 }

@@ -4,6 +4,7 @@
   import { getKey } from "$lib/getkey";
   import { WebStorage } from '$lib/WebStorage';
   import {get_user_profile} from '$lib/esclient';
+  import { uploadpath } from "$lib/config";
 
   // 全局状态：密钥信息和注销确认模态框
   let Keypriv;
@@ -129,7 +130,7 @@
 
       <ul>
         <li>
-          <a href="#" class="active-tab flex items-center px-4 py-3">
+          <a href="/creator" class="active-tab flex items-center px-4 py-3">
             <i class="fas fa-home w-5 text-center mr-3"></i>
             <span>概览</span>
           </a>
@@ -148,12 +149,7 @@
             <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">3</span>
           </a>
         </li>
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-cog w-5 text-center mr-3"></i>
-            <span>页面设置</span>
-          </a>
-        </li>
+
         <li>
           <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-chart-line w-5 text-center mr-3"></i>
@@ -174,17 +170,12 @@
           </a>
         </li>
         <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+          <a href="/editbook" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-book-medical w-5 text-center mr-3 text-blue-500"></i>
             <span>新建书籍</span>
           </a>
         </li>
-        <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-folder-plus w-5 text-center mr-3 text-yellow-500"></i>
-            <span>新建文集</span>
-          </a>
-        </li>
+
       </ul>
     </nav>
 
@@ -192,12 +183,23 @@
      
     <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-100 bg-gray-50">
       <div class="flex items-center justify-between">
-        <a href="/creator/profile" class="rounded-lg hover:bg-primary/5">
-        <div class="flex items-center">
-          <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+        <a href="/creator/profile" class="rounded-lg border border-transparent hover:shadow-md hover:scale-[1.02] transition-all duration-200 ease-in-out hover:bg-primary/5">
+        <div class="flex items-center ">
+        <!-- 根据用户资料是否存在动态渲染头像或默认图标 -->
+        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+        {#if user_profile && user_profile.avatarUrl}
+            <!-- 存在头像URL时显示用户头像 -->
+            <img 
+            src={uploadpath+user_profile.avatarUrl} 
+            alt={user_profile.displayName || '用户头像'} 
+            class="w-full h-full object-cover rounded-full border border-blue-200"
+            >
+        {:else}
+            <!-- 不存在头像时显示默认图标 -->
             <i class="fas fa-user text-primary"></i>
-          </div>
-          <div class="ml-3">
+        {/if}
+        </div>
+          <div class="ml-3 ">
             <p class="text-sm font-medium text-gray-900"> {user_profile?user_profile.displayName:""}</p>
             <p class="text-xs text-gray-500"> {user_profile?user_profile.title:""}</p>
           </div>

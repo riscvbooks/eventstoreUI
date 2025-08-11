@@ -393,6 +393,7 @@
           </div>
 
           <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
+            <a href="/editbook">
             <div class="flex items-center justify-center h-full">
               <button class="flex flex-col items-center text-gray-400 hover:text-primary">
                 <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center mb-2">
@@ -401,6 +402,7 @@
                 <span>新建书籍</span>
               </button>
             </div>
+            </a>
           </div>
         </div>
       </div>
