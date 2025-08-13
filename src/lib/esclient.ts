@@ -8,12 +8,21 @@ import {
     esecDecode,
     epubEncode,
     epubDecode,
-    secureEvent} from "eventstore-tools/src/key";
+    secureEvent,
+    hashMessage} from "eventstore-tools/src/key";
+
+
+
+
 
 import {WebSocketClient } from "eventstore-tools/src/WebSocketClient";
 
 let client =  new WebSocketClient(esserver);
- 
+
+function getId(tempEvent){
+  return hashMessage(JSON.stringify(tempEvent))
+}
+
 export async function create_user(email,pubkey,privkey,callback){
     await client.connect().catch(error => {});
 
@@ -155,16 +164,19 @@ export async function upload_file(filename,fileData,pubkey,privkey,callback){
 export async function create_book(bookInfo,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
+  let bookId = getId({pubkey,time:Math.floor(Date.now())})
+ 
+
   let event = {
   
       "ops": "C",
       "code": 200,
       "user": pubkey,
       "data": bookInfo,
-      "tags":[ ['t','create_book'],['web','esbook']]
+      "tags":[ ['t','create_book'],['web','esbook'],['d',bookId]]
     }
   let sevent = secureEvent(event,privkey);
-  callback({code:201,id:sevent.id})
+  callback({code:201,id:bookId})
   client.publish(sevent,function(message){
       callback(message[2]);
   });  
@@ -190,7 +202,7 @@ export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   });  
 }
 
-export async function get_books(callback){
+export async function get_books(pubkey,callback){
   
   await client.connect().catch(error => {});
   
@@ -202,6 +214,9 @@ export async function get_books(callback){
       "code": 203,
       "tags":[ ['t','create_book'],['web','esbook']]
     }
+
+  if (pubkey) event.eventuser = pubkey;
+
   client.subscribe(event,function(message){
          
       if (message[2] == "EOSE") client.unsubscribe(message[1]);
@@ -216,19 +231,13 @@ export async function get_book_id(bookid,callback){
   
  
 
-  let event = [{
-      "ops": "R",
-      "code": 203,
-      "tags":[ ['t','create_book'],['web','esbook']],
-      "eventid":bookid,
-    },
+  let event = 
     {
   
       "ops": "R",
       "code": 203,
       "tags":[ ['t','create_book'],['web','esbook'],['d',bookid]],
     }
-  ]
   client.subscribe(event,function(message){
          
       if (message[2] == "EOSE") client.unsubscribe(message[1]);
@@ -342,16 +351,21 @@ export async function get_user_profile(pubkey,callback){
 
 }
 
-export async function create_blog(content,pubkey,privkey,callback){
+export async function create_blog(blogData,pubkey,privkey,callback){
   await client.connect().catch(error => {});
+
+  let isDraft = false;
+  let blogId = getId({pubkey,time:Math.floor(Date.now())})
 
   let event = {
   
       "ops": "C",
       "code": 200,
       "user": pubkey,
-      "data": content,
-      "tags":[ ['t','create_blog'], ]
+      "data": blogData,
+      "tags":[ ['t','create_blog'], ['d',blogId],
+               ['s', isDraft ? 'draft' : 'published']  // 新增状态标签
+            ]
     }
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
@@ -363,13 +377,11 @@ export async function get_blog_id(blogid,callback){
   
   await client.connect().catch(error => {});
   
- 
-
   let event = {
       "ops": "R",
       "code": 203,
-      "tags":[ ['t','create_blog'], ],
-      "eventid":blogid,
+      "tags":[ ['t','create_blog'], ['d',blogid]],
+      
     }
  
   client.subscribe(event,function(message){
@@ -380,20 +392,25 @@ export async function get_blog_id(blogid,callback){
     }); 
 }
 
-export async function get_blogs(pubkey,callback){
+export async function get_blogs(pubkey,isDraft=1,callback){
   
   await client.connect().catch(error => {});
   
- 
-
   let event = {
       "ops": "R",
       "code": 203,
       "tags":[ ['t','create_blog'], ],
     };
+  if (isDraft == 1)
+    event.tags.push(['s', 'draft'])
   
+  if (isDraft == 2)
+    event.tags.push(['s', 'published'])
+
+  // isDraft 是其他值，就不填写 status标志，也就是查询所有的。例如 isDraft=0;
+
   if (pubkey) event['eventuser'] = pubkey;
-  
+
   client.subscribe(event,function(message){
          
       if (message[2] == "EOSE") client.unsubscribe(message[1]);
