@@ -55,7 +55,9 @@
   let isUnsaved = false;          // 是否有未保存的变动
   let simplemde = null;
  
-    
+  let bookLabels = []; // 存储书籍标签
+  let showAddTagInput = false; // 控制添加标签输入框显示
+  let newTagName = ""; // 新标签输入值  
 
   function showNotification(message, type = 'success') {
       const notification = document.createElement('div');
@@ -401,7 +403,8 @@
             let bookInfo = {
                 coverImgurl :url,
                 title:bookTitle,
-                author:bookAuthor
+                author:bookAuthor,
+                labels:bookLabels
             }
             if (bookId ){
               update_book(bookInfo,bookId,Keypub,Keypriv,function(msg){
@@ -517,9 +520,7 @@
   }
 
 
-  let bookLabels = []; // 存储书籍标签
-  let showAddTagInput = false; // 控制添加标签输入框显示
-  let newTagName = ""; // 新标签输入值
+
 
   // 颜色池（复用已有的colorPool，若没有则添加）
   const colorPool = [
@@ -579,6 +580,10 @@
           bookAuthor = message.data.author;
           bookTitle = message.data.title;
           coverImgurl = message.data.coverImgurl;
+          if (message.data.labels){
+            bookLabels  = message.data.labels;
+          }
+            
 
           const bookCover = document.querySelector('.book-cover');
                       

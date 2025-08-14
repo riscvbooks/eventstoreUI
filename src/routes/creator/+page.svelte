@@ -40,6 +40,9 @@
     else {
       let temp = blogs;
       message.data = JSON.parse(message.data)
+      if (getTagValue(message.tags,'d')){
+          message.id = getTagValue(message.tags,'d');
+      } 
       temp.push(message)
       blogs = temp;
     }
@@ -53,7 +56,8 @@
       let temp = books;
       if (getTagValue(message.tags,'d')){
             message.id = getTagValue(message.tags,'d');
-      } 
+      }
+      
       temp.push(message)
       books = temp;
     }
@@ -395,14 +399,14 @@
               </div>
               
               <div class="ml-4">
-                <h3 class="font-bold text-gray-800">{book.data.title}</h3>
+                <a href="/editbook?bookid={book.id}"><h3 class="font-bold text-gray-800">{book.data.title}</h3></a>
                 <div class="flex items-center mt-1 text-sm text-gray-500">
-                  <span>{book.data.category || '未分类'}</span>
+                  <span>{book.labels && book.labels.length > 0 ? book.labels[0] : '未分类'}</span>
                   <span class="mx-2">|</span>
-                  <span>已完成 {book.data.progress || 30}%</span>
+                  <span>已完成  </span>
                 </div>
                 <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-                  <div class="bg-green-500 h-2 rounded-full" style="width: {book.data.progress || 30}%"></div>
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
                 </div>
               </div>
             </div>

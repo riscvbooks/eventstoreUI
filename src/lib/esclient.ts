@@ -200,6 +200,8 @@ export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
       "data": bookInfo,
       "tags":[ ['t','create_book'],['web','esbook'],['d',bookid]]
     }
+  if (bookInfo.labels) event.labels = bookInfo.labels;  
+  
   let sevent = secureEvent(event,privkey);
  
   client.publish(sevent,function(message){
