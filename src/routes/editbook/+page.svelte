@@ -959,52 +959,45 @@
         </div>
         
         <div class="flex flex-col items-center {hiddencover}" >
-          <!-- 封面上传部分保持不变 -->
-          <div class="w-full max-w-xs h-64 mb-4" id="bookCoverContainer">
-            <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 mb-4 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl" >
+          <!-- 1. 封面预览区域（顶部视觉焦点） -->
+          <div class="w-full max-w-xs h-64 mb-6" id="bookCoverContainer">
+            <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl" >
               <h3 class="text-2xl font-bold mb-2">点击上传封面</h3>
               <p class="text-lg opacity-90">或者鼠标点击此处后</p>
               <p class="mt-4 font-medium">粘贴截图</p>
             </div>
           </div>  
           
-          <!-- 封面操作按钮保持不变 -->
-          <!-- 按钮区域添加类名：book-info-actions -->
-          <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-4 book-info-actions">
-            <label class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
-              <i class="fa fa-upload mr-1"></i>上传封面
+          <!-- 2. 封面上传按钮（紧跟封面预览下方） -->
+          <div class="w-full max-w-xs mb-6">
+            <label class="w-full bg-gray-100 hover:bg-gray-200 px-4 py-2.5 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
+              <i class="fa fa-upload mr-2"></i>上传封面图片
               <input type="file" class="hidden" id="coverInputfile">
             </label>
-            <button class="bg-violet-500 hover:bg-violet-700 text-white px-3 py-2 rounded-lg transition flex items-center justify-center btn-hover text-sm" on:click={submitBookInfo}>
-              <i class="fa fa-paint-brush mr-1"></i>提交书籍信息
-            </button>
           </div>
 
-          <!-- 表单区域添加类名：book-info-form -->
-          <div class="space-y-3 w-full max-w-xs form-group book-info-form">
+          <!-- 3. 核心信息表单（标题、作者、标签） -->
+          <div class="space-y-5 w-full max-w-xs form-group book-info-form">
             <!-- 书籍标题 -->
             <div>
-              <label class="block text-sm font-medium mb-1">书籍标题</label>
-              <!-- 输入框添加类名：form-control -->
+              <label class="block text-sm font-medium mb-1">书籍标题 <span class="text-red-500">*</span></label>
               <input type="text" placeholder="输入书籍标题" bind:value={bookTitle} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent form-control">
             </div>
 
             <!-- 作者 -->
             <div>
-              <label class="block text-sm font-medium mb-1">作者</label>
-              <!-- 输入框添加类名：form-control -->
+              <label class="block text-sm font-medium mb-1">作者 <span class="text-red-500">*</span></label>
               <input type="text" placeholder="作者姓名" bind:value={bookAuthor} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent form-control">
             </div>
-           
-            <!-- 新增：书籍标签区域 -->
+          
+            <!-- 书籍标签 -->
             <div>
               <label class="block text-sm font-medium mb-1">书籍标签</label>
               <div class="categories">
-                <!-- 显示已添加的标签（前5个） -->
+                <!-- 已添加标签 -->
                 {#each bookLabels.slice(0, 5) as tag, index}
                   <span class="px-3 py-1 rounded-full text-sm flex items-center {colorPool[index % colorPool.length].bgClass} {colorPool[index % colorPool.length].textClass}">
                     {tag}
-                    <!-- 标签删除按钮 -->
                     <button 
                       class="tag-remove-btn"
                       on:click={(e) => {
@@ -1017,20 +1010,19 @@
                   </span>
                 {/each}
 
-                <!-- 超出5个标签的提示 -->
+                <!-- 超出数量提示 -->
                 {#if bookLabels.length > 5}
                   <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
                     +{bookLabels.length - 5}
                   </span>
                 {/if}
 
-                <!-- 添加标签按钮/输入框切换 -->
+                <!-- 添加标签按钮/输入框 -->
                 {#if !showAddTagInput}
                   <button class="add-category" on:click={() => showAddTagInput = true}>
                     <i class="fas fa-plus mr-1"></i> 添加标签
                   </button>
                 {:else}
-                  <!-- 新增标签输入框 -->
                   <div class="tag-input-group">
                     <input
                       type="text"
@@ -1043,16 +1035,19 @@
                       }}
                       autofocus
                     >
-                    <button class="tag-btn bg-primary text-white" on:click={addTag}>
-                      确认
-                    </button>
-                    <button class="tag-btn bg-gray-100 text-gray-600" on:click={() => showAddTagInput = false}>
-                      取消
-                    </button>
+                    <button class="tag-btn bg-primary text-white" on:click={addTag}>确认</button>
+                    <button class="tag-btn bg-gray-100 text-gray-600" on:click={() => showAddTagInput = false}>取消</button>
                   </div>
                 {/if}
               </div>
             </div>
+          </div>
+
+          <!-- 4. 提交按钮（最底部，逻辑终点） -->
+          <div class="w-full max-w-xs mt-6">
+            <button class="w-full bg-violet-500 hover:bg-violet-700 text-white px-4 py-2.5 rounded-lg transition flex items-center justify-center btn-hover text-sm font-medium" on:click={submitBookInfo}>
+              <i class="fa fa-check-circle mr-2"></i>提交书籍信息
+            </button>
           </div>
         </div>
       </div>
