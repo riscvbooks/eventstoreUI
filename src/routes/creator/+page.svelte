@@ -382,6 +382,7 @@
         {#each books as book}
           <div class="content-card bg-white border border-gray-200 rounded-lg p-4 hover:border-primary">
             <div class="flex">
+               <a href="/editbook?bookid={book.id}">
               <!-- 使用书籍封面图替换纯色背景 -->
               <div class="book-cover book-ribbon relative flex-shrink-0 w-16 h-20 rounded-lg overflow-hidden">
                 <!-- 背景图使用书籍的封面图片 -->
@@ -397,13 +398,14 @@
                   <i class="fas fa-book text-2xl"></i>
                 </div>
               </div>
+              </a>
               
               <div class="ml-4">
                 <a href="/editbook?bookid={book.id}"><h3 class="font-bold text-gray-800">{book.data.title}</h3></a>
                 <div class="flex items-center mt-1 text-sm text-gray-500">
                   <span>{book.labels && book.labels.length > 0 ? book.labels[0] : '未分类'}</span>
                   <span class="mx-2">|</span>
-                  <span>已完成  </span>
+                  <span>{book.servertimestamp.split("T")[0] } </span>
                 </div>
                 <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
                   <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
