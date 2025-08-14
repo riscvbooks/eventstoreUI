@@ -113,8 +113,10 @@
         case 1: // 取消操作：不切换章节
           return false; 
         case 2: // 不保存：直接切换章节（放弃未保存内容）
-          isUnsaved = false; // 重置未保存状态
+          
           simplemde.value("");
+          isUnsaved = false; // 重置未保存状态
+
           break; 
         case 3: // 保存：先执行保存（异步操作），再切换章节
           await saveCurrentChapter(); // 等待保存完成（假设saveCurrentContent返回Promise）
@@ -134,13 +136,14 @@
     currentChapterTitle = item.title;
   
     simplemde.value("");
-    isUnsaved = false;
-
+     
+    setTimeout(() => {  isUnsaved = false; }, 100);
     get_chapter(bookId,item.id,function(message){
            if (message != "EOSE"){     
                  
             simplemde.value (message.data);
-            isUnsaved = false;
+             
+            setTimeout(() => {   isUnsaved = false; }, 100);
            }
     })
 
@@ -513,6 +516,33 @@
     }
   }
 
+
+  let bookLabels = []; // 存储书籍标签
+  let showAddTagInput = false; // 控制添加标签输入框显示
+  let newTagName = ""; // 新标签输入值
+
+  // 颜色池（复用已有的colorPool，若没有则添加）
+  const colorPool = [
+    { bgClass: "bg-blue-100", textClass: "text-blue-800" },
+    { bgClass: "bg-green-100", textClass: "text-green-800" },
+    { bgClass: "bg-yellow-100", textClass: "text-yellow-800" },
+    { bgClass: "bg-purple-100", textClass: "text-purple-800" },
+    { bgClass: "bg-orange-100", textClass: "text-orange-800" },
+    { bgClass: "bg-pink-100", textClass: "text-pink-800" },
+    { bgClass: "bg-teal-100", textClass: "text-teal-800" }
+  ];
+
+  // 添加书籍标签函数（添加到函数定义区域）
+  function addTag() {
+    if (!newTagName) return ;
+
+    bookLabels.push(newTagName)
+    bookLabels = [...bookLabels]
+    // 重置输入
+    newTagName = "";
+    showAddTagInput = false;
+    showNotification("标签添加成功", 1500, "success");
+  }
   
 
   function getBookId(url1) {
@@ -661,10 +691,11 @@
       simplemde.codemirror.on("change", function() {
         if (currentEditId !== null) {
           isUnsaved = true;
+           
           updateStats();
           
         }
-        simplemde.refresh();
+         
       });
       
       return simplemde;
@@ -916,7 +947,8 @@
     <!-- 左侧面板 - 大纲和封面 -->
     <div class="left-seamless flex flex-col">
       <!-- 书籍封面 -->
-      <div class="p-5 border-b border-gray-200" >
+      <!-- 书籍信息区域（修改后） -->
+      <div class="p-5 border-b border-gray-200">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-primary flex items-center" on:click={togglecover}>
             <i class="fa fa-image mr-2"></i>书籍信息
@@ -927,18 +959,18 @@
         </div>
         
         <div class="flex flex-col items-center {hiddencover}" >
+          <!-- 封面上传部分保持不变 -->
           <div class="w-full max-w-xs h-64 mb-4" id="bookCoverContainer">
-            
             <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full max-w-xs h-64 mb-4 flex flex-col items-center justify-center text-white p-6 text-center shadow-xl" >
-                <h3 class="text-2xl font-bold mb-2">点击上传封面</h3>
-                <p class="text-lg opacity-90">或者鼠标点击此处后</p>
-                <p class="mt-4 font-medium">粘贴截图</p>
+              <h3 class="text-2xl font-bold mb-2">点击上传封面</h3>
+              <p class="text-lg opacity-90">或者鼠标点击此处后</p>
+              <p class="mt-4 font-medium">粘贴截图</p>
             </div>
-  
-
           </div>  
           
-          <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-4">
+          <!-- 封面操作按钮保持不变 -->
+          <!-- 按钮区域添加类名：book-info-actions -->
+          <div class="grid grid-cols-2 gap-3 w-full max-w-xs mb-4 book-info-actions">
             <label class="bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
               <i class="fa fa-upload mr-1"></i>上传封面
               <input type="file" class="hidden" id="coverInputfile">
@@ -947,16 +979,79 @@
               <i class="fa fa-paint-brush mr-1"></i>提交书籍信息
             </button>
           </div>
-          
-          <div class="space-y-3 w-full max-w-xs">
+
+          <!-- 表单区域添加类名：book-info-form -->
+          <div class="space-y-3 w-full max-w-xs form-group book-info-form">
+            <!-- 书籍标题 -->
             <div>
               <label class="block text-sm font-medium mb-1">书籍标题</label>
-              <input type="text" placeholder="输入书籍标题" bind:value={bookTitle} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              <!-- 输入框添加类名：form-control -->
+              <input type="text" placeholder="输入书籍标题" bind:value={bookTitle} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent form-control">
             </div>
 
+            <!-- 作者 -->
             <div>
               <label class="block text-sm font-medium mb-1">作者</label>
-              <input type="text" placeholder="作者姓名" bind:value={bookAuthor} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+              <!-- 输入框添加类名：form-control -->
+              <input type="text" placeholder="作者姓名" bind:value={bookAuthor} class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent form-control">
+            </div>
+           
+            <!-- 新增：书籍标签区域 -->
+            <div>
+              <label class="block text-sm font-medium mb-1">书籍标签</label>
+              <div class="categories">
+                <!-- 显示已添加的标签（前5个） -->
+                {#each bookLabels.slice(0, 5) as tag, index}
+                  <span class="px-3 py-1 rounded-full text-sm flex items-center {colorPool[index % colorPool.length].bgClass} {colorPool[index % colorPool.length].textClass}">
+                    {tag}
+                    <!-- 标签删除按钮 -->
+                    <button 
+                      class="tag-remove-btn"
+                      on:click={(e) => {
+                        e.stopPropagation();
+                        bookLabels = bookLabels.filter((_, i) => i !== index);
+                      }}
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </span>
+                {/each}
+
+                <!-- 超出5个标签的提示 -->
+                {#if bookLabels.length > 5}
+                  <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+                    +{bookLabels.length - 5}
+                  </span>
+                {/if}
+
+                <!-- 添加标签按钮/输入框切换 -->
+                {#if !showAddTagInput}
+                  <button class="add-category" on:click={() => showAddTagInput = true}>
+                    <i class="fas fa-plus mr-1"></i> 添加标签
+                  </button>
+                {:else}
+                  <!-- 新增标签输入框 -->
+                  <div class="tag-input-group">
+                    <input
+                      type="text"
+                      class="form-input tag-input" 
+                      placeholder="输入标签..."
+                      bind:value={newTagName}
+                      on:keydown={(e) => {
+                        if (e.key === 'Enter') addTag();
+                        if (e.key === 'Escape') showAddTagInput = false;
+                      }}
+                      autofocus
+                    >
+                    <button class="tag-btn bg-primary text-white" on:click={addTag}>
+                      确认
+                    </button>
+                    <button class="tag-btn bg-gray-100 text-gray-600" on:click={() => showAddTagInput = false}>
+                      取消
+                    </button>
+                  </div>
+                {/if}
+              </div>
             </div>
           </div>
         </div>

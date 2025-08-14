@@ -175,7 +175,12 @@ export async function create_book(bookInfo,pubkey,privkey,callback){
       "data": bookInfo,
       "tags":[ ['t','create_book'],['web','esbook'],['d',bookId]]
     }
+  
+  if (bookInfo.labels) event.labels = bookInfo.labels;
+
   let sevent = secureEvent(event,privkey);
+
+
   callback({code:201,id:bookId})
   client.publish(sevent,function(message){
       callback(message[2]);
@@ -367,6 +372,8 @@ export async function create_blog(blogData,pubkey,privkey,callback){
                ['s', isDraft ? 'draft' : 'published']  // 新增状态标签
             ]
     }
+  if (blogData.labels) event.labels = blogData.labels; 
+
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
       callback(message[2]);
