@@ -228,6 +228,10 @@
   }
 </style>
 
+<svelte:head>
+    <title>esbook - 创作空间</title>
+</svelte:head>
+
 <!-- 页面内容 -->
 <!-- 顶部统计卡片 -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

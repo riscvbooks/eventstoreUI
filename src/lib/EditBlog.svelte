@@ -243,7 +243,7 @@
     overflow: hidden;
   }
 
-  .editor-header {
+  .editor-head {
     border-bottom: 1px solid #E5E7EB;
     padding: 1rem 1.5rem;
   }
@@ -522,7 +522,7 @@
 <!-- 编辑器主体 -->
 <div class="editor-container">
   <!-- 头部 -->
-  <div class="editor-header">
+  <div class="editor-head">
     <h2 class="editor-title">创作新博客</h2>
     <p class="editor-subtitle">撰写并发布新的博客文章</p>
   </div>

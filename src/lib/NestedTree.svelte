@@ -273,7 +273,23 @@
   .outline-item.drag-over-inside {
     background-color: rgba(79, 70, 229, 0.12);
     border: 2px dashed #4F46E5;
+    transform: scale(1.1);
+    /* 添加过渡效果使放大更平滑 */
+    transition: transform 0.3s ease;
+    /* 闪烁效果 - 使用动画让边框颜色闪烁 */
+    animation: blink 1s infinite alternate;
   }
+
+  @keyframes blink {
+    from {
+        border-color: #4F46E5;
+        box-shadow: 0 0 5px rgba(79, 70, 229, 0.5);
+    }
+    to {
+        border-color: #818CF8;
+        box-shadow: 0 0 15px rgba(79, 70, 229, 0.8);
+    }
+}
   
   .outline-item + .outline-tree {
     position: relative;
