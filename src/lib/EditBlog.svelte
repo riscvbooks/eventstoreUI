@@ -22,6 +22,32 @@
   let previewImage;
   let fileInput;
 
+
+  let showAddTagInput = false; // 控制添加标签输入框显示
+  let newTagName = ""; // 新标签输入值
+
+  const colorPool = [
+    { bgClass: "bg-blue-100", textClass: "text-blue-800" },
+    { bgClass: "bg-green-100", textClass: "text-green-800" },
+    { bgClass: "bg-yellow-100", textClass: "text-yellow-800" },
+    { bgClass: "bg-purple-100", textClass: "text-purple-800" },
+    { bgClass: "bg-orange-100", textClass: "text-orange-800" },
+    { bgClass: "bg-pink-100", textClass: "text-pink-800" },
+    { bgClass: "bg-teal-100", textClass: "text-teal-800" }
+  ];
+
+  function addTag(){
+    
+    if (newTagName){
+        
+        blogData.labels.push(newTagName);
+    }
+    showAddTagInput = false;
+    blogData.labels = [...blogData.labels]
+    newTagName = "";
+
+  }
+
   // 初始化
   onMount(async () => {
     const Key = getKey();
@@ -453,6 +479,44 @@
   #coverFileInput {
     display: none;
   }
+
+    /* 新增标签输入框样式 */
+  .tag-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .tag-input {
+    width: auto !important; /* 强制覆盖 100% 宽度 */
+    min-width: 120px;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+  }   
+  .tag-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    border: none;
+  }
+  
+  .tag-remove-btn {
+    margin-left: 0.25rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.7;
+    font-size: 0.75rem;
+  }
+  
+  .tag-remove-btn:hover {
+    opacity: 1;
+  }
+
 </style>
 
 <!-- 编辑器主体 -->
@@ -476,18 +540,63 @@
       >
     </div>
 
-    <!-- 文章分类 -->
+    <!-- 文章标签区域（修改部分） -->
     <div class="form-group">
-      <label class="form-label">文章分类</label>
-      <div class="categories">
-        <span class="category-tag">技术</span>
-        <span class="category-tag">生活</span>
-        <span class="category-tag">旅行</span>
-        <span class="category-tag">读书</span>
-        <button class="add-category">
-          <i class="fas fa-plus mr-1"></i> 添加分类
-        </button>
-      </div>
+        <label class="form-label">文章标签</label>
+        <div class="categories">
+        <!-- 显示已选标签（前5个） -->
+        {#each blogData.labels.slice(0, 5) as label, index}
+            <span class="px-3 py-1 rounded-full text-sm flex items-center {colorPool[index].bgClass} {colorPool[index].textClass}">
+            {label}
+            <!-- 移除标签按钮 -->
+            <button 
+                class="tag-remove-btn"
+                on:click={(e) => {
+                e.stopPropagation(); // 防止事件冒泡
+                // 从数组中移除当前标签
+                blogData.labels = blogData.labels.filter((_, i) => i !== index);
+                }}
+            >
+                <i class="fas fa-times"></i>
+            </button>
+            </span>
+        {/each}
+
+        <!-- 显示超出数量提示 -->
+        {#if blogData.labels.length > 5}
+            <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
+            +{blogData.labels.length - 5}
+            </span>
+        {/if}
+
+        <!-- 添加标签按钮/输入框切换 -->
+        {#if !showAddTagInput}
+            <button class="add-category" on:click={() => showAddTagInput = true}>
+            <i class="fas fa-plus mr-1"></i> 添加标签
+            </button>
+        {:else}
+            <!-- 新增标签输入框 -->
+            <div class="tag-input-group">
+            <input
+                type="text"
+                class="form-input tag-input" 
+                placeholder="输入标签..."
+                bind:value={newTagName}
+                on:keydown={(e) => {
+                if (e.key === 'Enter') addTag();
+                if (e.key === 'Escape') showAddTagInput = false;
+                }}
+                autofocus
+            >
+            <button class="tag-btn bg-primary text-white" on:click={addTag}>
+                确认
+            </button>
+            <button class="tag-btn bg-gray-100 text-gray-600" on:click={() => showAddTagInput = false}>
+                取消
+            </button>
+            </div>
+        {/if}
+        </div>
     </div>
 
     <!-- 文章封面（核心修复区域） -->
