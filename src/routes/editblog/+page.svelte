@@ -31,7 +31,7 @@
     console.log("保存成功的博客数据：", blog);
     // 保存成功后可以刷新博客列表
     blogs = []
-    await get_blogs(Keypub,0,handle_blogs);
+    await get_blogs(Keypub,0,0,10,handle_blogs);
   }
 
   function getTagValue(tags,t) {
@@ -66,7 +66,8 @@
     }
     
     // 加载博客列表
-    await get_blogs(Keypub,0,handle_blogs);
+    //offset 0, limit 10
+    await get_blogs(Keypub,0,0,10,handle_blogs);
   });
 </script>
 

@@ -50,7 +50,7 @@
 
   function handle_books(message){
     if (message == "EOSE"){
-      console.log(books);
+      ;
     }
     else {
       let temp = books;
@@ -75,9 +75,11 @@
       showNotification("请先登录。", "warning");
       return;
     }
-    // 0 表示获取所有的blog
-    await get_blogs(Keypub,0,handle_blogs);
-    await get_books(Keypub,handle_books);
+    // 0 isDraft 表示获取所有的blog
+    // offset=0
+    // limit = 4
+    await get_blogs(Keypub, 0, 0, 4,handle_blogs);
+    await get_books(Keypub, 0, 10,  handle_books);
  
     // 组件卸载时清理事件
     return () => {
@@ -323,7 +325,7 @@
       <div class="border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold text-gray-800">近期博客</h2>
-          <a href="#" class="text-primary text-sm hover:underline">查看全部</a>
+          <a href="/editblog" class="text-primary text-sm hover:underline">查看全部</a>
         </div>
       </div>
 
@@ -372,7 +374,7 @@
       <div class="border-b border-gray-200 px-6 py-4">
         <div class="flex items-center justify-between">
           <h2 class="text-xl font-bold text-gray-800">我的书籍</h2>
-          <a href="#" class="text-primary text-sm hover:underline">新建书籍</a>
+          <a href="/editbook" class="text-primary text-sm hover:underline">新建书籍</a>
         </div>
       </div>
 

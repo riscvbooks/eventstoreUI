@@ -28,7 +28,8 @@
     }
     console.log(displayedBooks)
   }
-  get_books(null,handleBooks);
+  //offset 0, limit 20
+  get_books(null,0,20,handleBooks);
  
 
     

@@ -209,7 +209,7 @@ export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   });  
 }
 
-export async function get_books(pubkey,callback){
+export async function get_books(pubkey,offset=0,limit=10,callback){
   
   await client.connect().catch(error => {});
   
@@ -219,6 +219,8 @@ export async function get_books(pubkey,callback){
   
       "ops": "R",
       "code": 203,
+      "limit":limit,
+      "offset":offset,
       "tags":[ ['t','create_book'],['web','esbook']]
     }
 
@@ -401,13 +403,15 @@ export async function get_blog_id(blogid,callback){
     }); 
 }
 
-export async function get_blogs(pubkey,isDraft=1,callback){
+export async function get_blogs(pubkey,isDraft=1,offset=0,limit=10,callback){
   
   await client.connect().catch(error => {});
   
   let event = {
       "ops": "R",
       "code": 203,
+      "limit":limit,
+      "offset":offset,
       "tags":[ ['t','create_blog'], ],
     };
   if (isDraft == 1)
@@ -420,6 +424,7 @@ export async function get_blogs(pubkey,isDraft=1,callback){
 
   if (pubkey) event['eventuser'] = pubkey;
 
+  
   client.subscribe(event,function(message){
          
       if (message[2] == "EOSE") client.unsubscribe(message[1]);

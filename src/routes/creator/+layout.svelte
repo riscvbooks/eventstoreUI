@@ -136,14 +136,14 @@
           </a>
         </li>
         <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+          <a href="/editblog" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-blog w-5 text-center mr-3"></i>
             <span>博客管理</span>
             <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">12</span>
           </a>
         </li>
         <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+          <a href="/editbook" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-book w-5 text-center mr-3"></i>
             <span>书籍管理</span>
             <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">3</span>
@@ -164,7 +164,7 @@
 
       <ul>
         <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
+          <a href="/editblog" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-plus-circle w-5 text-center mr-3 text-green-500"></i>
             <span>新建博客</span>
           </a>
