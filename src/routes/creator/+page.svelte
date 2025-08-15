@@ -3,7 +3,8 @@
   import { uploadpath } from "$lib/config";
   import { getKey } from "$lib/getkey";
   import { showNotification } from "$lib/message";
-  import { upload_file,create_blog,get_blogs,get_books } from "$lib/esclient";
+  import { upload_file,create_blog,get_blogs,
+      get_books,blog_counts,book_counts } from "$lib/esclient";
   import EditBlog from '$lib/EditBlog.svelte';
 
   let Keypriv;
@@ -12,6 +13,8 @@
   
   let blogs = [];
   let books = [];
+  let blogTotalCount = 0 ;
+  let bookTotalCount = 0 ;
 
   // 存储封面图片的Uint8Array数据
   let coverImageData = null;
@@ -63,7 +66,16 @@
     }
   }
 
- 
+  function handle_blog_counts(message){
+    if (message.code == 200) {
+      blogTotalCount = message.counts;
+    }
+  }
+  function handle_book_counts(message){
+    if (message.code == 200) {
+      bookTotalCount = message.counts;
+    }
+  }
 
   onMount(async () => {
     // 初始化用户密钥
@@ -81,7 +93,9 @@
     await get_blogs(Keypub, 0, 0, 4,handle_blogs);
     await get_books(Keypub, 0, 10,  handle_books);
  
-    // 组件卸载时清理事件
+    await blog_counts(Keypub,handle_blog_counts);
+    await book_counts(Keypub,handle_book_counts);
+
     return () => {
  
     };
@@ -248,13 +262,13 @@
       </div>
       <div>
         <h3 class="text-sm text-gray-500">博客文章</h3>
-        <p class="text-2xl font-bold text-gray-800">12 篇</p>
+        <p class="text-2xl font-bold text-gray-800">{blogTotalCount} 篇</p>
       </div>
     </div>
     <div class="mt-4">
       <div class="flex justify-between text-sm text-gray-600 mb-1">
         <span>已发布</span>
-        <span>8</span>
+        <span></span>
       </div>
       <div class="w-full bg-gray-200 rounded-full h-2">
         <div class="bg-blue-500 h-2 rounded-full" style="width: 66%"></div>
@@ -269,7 +283,7 @@
       </div>
       <div>
         <h3 class="text-sm text-gray-500">书籍作品</h3>
-        <p class="text-2xl font-bold text-gray-800">3 本</p>
+        <p class="text-2xl font-bold text-gray-800">{bookTotalCount} 本</p>
       </div>
     </div>
     <div class="mt-4">

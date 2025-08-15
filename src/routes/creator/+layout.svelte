@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { getKey } from "$lib/getkey";
   import { WebStorage } from '$lib/WebStorage';
-  import {get_user_profile} from '$lib/esclient';
+  import {get_user_profile,blog_counts,book_counts} from '$lib/esclient';
   import { uploadpath } from "$lib/config";
 
   // 全局状态：密钥信息和注销确认模态框
@@ -13,6 +13,9 @@
   let confirmMessage = "";
   let confirmcallback = "";
   let user_profile;
+
+  let blogTotalCount = 0 ;
+  let bookTotalCount = 0 ;
 
   // 注销逻辑（全局共享）
   const Logout = () => {
@@ -54,6 +57,16 @@
          
          
     })
+    await blog_counts(Keypub,message =>{
+      if (message.code == 200) {
+        blogTotalCount = message.counts;
+      }
+    });
+    await book_counts(Keypub,message =>{
+      if (message.code == 200) {
+        bookTotalCount = message.counts;
+      }
+    });
 
     // 侧边栏标签切换逻辑（共享交互）
     document.querySelectorAll('.tab-button').forEach(button => {
@@ -139,14 +152,14 @@
           <a href="/editblog" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-blog w-5 text-center mr-3"></i>
             <span>博客管理</span>
-            <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">12</span>
+            <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{blogTotalCount}</span>
           </a>
         </li>
         <li>
           <a href="/editbook" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
             <i class="fas fa-book w-5 text-center mr-3"></i>
             <span>书籍管理</span>
-            <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">3</span>
+            <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{bookTotalCount}</span>
           </a>
         </li>
 

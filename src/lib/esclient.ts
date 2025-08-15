@@ -187,6 +187,25 @@ export async function create_book(bookInfo,pubkey,privkey,callback){
   });  
 }
 
+export async function book_counts(pubkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+    "ops": "R",
+    "code": 204,
+
+    "tags":[['t','create_book'], ]
+  }
+  
+  if (pubkey) event.eventuser = pubkey;
+
+  client.subscribe(event,function(message){
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
+}
+
 export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
@@ -431,4 +450,21 @@ export async function get_blogs(pubkey,isDraft=1,offset=0,limit=10,callback){
       
       callback(message[2])
     }); 
+}
+
+export async function blog_counts(pubkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+    "ops": "R",
+    "code": 204,
+    "tags":[['t','create_blog'], ]
+  }
+  if (pubkey) event.eventuser = pubkey;
+
+  client.subscribe(event,function(message){
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
 }
