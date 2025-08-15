@@ -363,10 +363,12 @@
                 <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">已发布</span>
               </div>
             </div>
-            <div class="mt-3 flex space-x-2">
+            <div class="mt-3 flex space-x-2"> 
+             <a href="/editblog?blogid={blog.id}">
               <button class="text-sm text-gray-600 hover:text-primary">
-                <i class="fas fa-edit mr-1"></i> 编辑
+               <i class="fas fa-edit mr-1"></i> 编辑
               </button>
+              </a>
               <button class="text-sm text-gray-600 hover:text-red-500">
                 <i class="fas fa-trash-alt mr-1"></i> 删除
               </button>

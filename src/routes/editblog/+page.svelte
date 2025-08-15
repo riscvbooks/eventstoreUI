@@ -3,7 +3,8 @@
   import { uploadpath } from "$lib/config";
   import { getKey } from "$lib/getkey";
   import { showNotification } from "$lib/message";
-  import { upload_file, create_blog, get_blogs, get_books } from "$lib/esclient";
+  import { upload_file, create_blog, get_blogs, 
+    get_books, blog_counts,get_blog_id } from "$lib/esclient";
   import EditBlog from '$lib/EditBlog.svelte';
 
   const borderColors = [
@@ -17,6 +18,7 @@
   let Keypriv;
   let Keypub;
  
+  let blogId = "";
   // 存储博客基本数据
   let blogData = {
     title: '',
@@ -24,34 +26,73 @@
     coverUrl: '',
     labels: [],
   };
-  // 模拟博客列表数据（实际项目中可从API获取）
-  let blogs = [];
+  
 
+  // 博客列表与分页相关状态
+  let blogs = [];
+  let currentPage = 1; // 当前页码
+  const pageSize = 5; // 每页数量
+  let blogTotalCount = 0; // 总博客数量
+
+  // 计算总页数
+  $: totalPages = Math.ceil(blogTotalCount / pageSize) || 1;
+
+  // 保存成功后刷新当前页数据
   async function handleSaveSuccess(blog) {
     console.log("保存成功的博客数据：", blog);
-    // 保存成功后可以刷新博客列表
-    blogs = []
-    await get_blogs(Keypub,0,0,10,handle_blogs);
+    await loadBlogs(currentPage); // 刷新当前页
   }
 
-  function getTagValue(tags,t) {
+  // 加载指定页的博客数据
+  async function loadBlogs(page) {
+    if (page < 1 || page > totalPages) return; // 边界检查
+    
+    blogs = []; // 清空现有数据
+    const offset = (page - 1) * pageSize; // 计算偏移量
+    await get_blogs(Keypub, 0, offset, pageSize, handle_blogs);
+    currentPage = page; // 更新当前页
+  }
+
+  // 上一页
+  async function prevPage() {
+    if (currentPage > 1) {
+      await loadBlogs(currentPage - 1);
+    }
+  }
+
+  // 下一页
+  async function nextPage() {
+    if (currentPage < totalPages) {
+      await loadBlogs(currentPage + 1);
+    }
+  }
+
+  function getTagValue(tags, t) {
     const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
     return dTag ? dTag[1] : null;
   }
 
-  function handle_blogs(message){
-    if (message == "EOSE"){
-      ;
+  function handle_blogs(message) {
+    if (message == "EOSE") {
+      return;
+    } else {
+      message.data = JSON.parse(message.data);
+      if (getTagValue(message.tags, 'd')) {
+        message.id = getTagValue(message.tags, 'd');
+      }
+      blogs = [...blogs, message]; // 累加当前页数据
     }
-    else {
-      let temp = blogs;
-      message.data = JSON.parse(message.data)
-      if (getTagValue(message.tags,'d')){
-          message.id = getTagValue(message.tags,'d');
-      } 
-      temp.push(message)
-      blogs = temp;
-    }
+  }
+
+  function getBlogId( ) {
+      let url;
+      // 处理传入的URL或使用当前页面URL
+    
+      url = new URL(window.location.href);
+   
+      let Id = url.searchParams.get('blogid');
+      
+      return Id; // 如果不存在会返回null
   }
 
   onMount(async () => {
@@ -64,16 +105,34 @@
       showNotification("请先登录。", "warning");
       return;
     }
-    
-    // 加载博客列表
-    //offset 0, limit 10
-    await get_blogs(Keypub,0,0,10,handle_blogs);
+    blogId = getBlogId();
+    if (blogId) {
+        await get_blog_id(blogId,message =>{
+            if (message.code == 200){
+                if (message.user != Keypub){
+                    showNotification("你不是这篇blog的作者,无法编辑",2000,"warning");
+                    return ;
+                }
+                let b = JSON.parse(message.data);
+                blogData = b;
+                
+            }
+        })
+    }
+    // 1. 获取总博客数量
+    await blog_counts(Keypub, message => {
+      if (message.code == 200) {
+        blogTotalCount = message.counts;
+      }
+    });
+
+    // 2. 加载第一页数据
+    await loadBlogs(1);
   });
 </script>
 
 <style>
- 
-  /* 标题样式 */
+  /* 原有样式保持不变 */
   .preview-title {
     font-size: 1.5rem;
     font-weight: 600;
@@ -83,15 +142,11 @@
     border-bottom: 2px solid #c7d2fe;
   }
   
- 
-  
-  /* 博客列表 */
   .blog-list {
     display: grid;
     gap: 10px;
   }
   
-  /* 博客卡片 */
   .blog-card {
     background: white;
     border-radius: 12px;
@@ -123,8 +178,6 @@
     border-left-color: #6366f1;
   }
   
- 
-  
   .blog-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -133,7 +186,6 @@
     line-height: 1.4;
   }
   
- 
   .blog-meta {
     display: flex;
     justify-content: space-between;
@@ -157,7 +209,6 @@
     color: #475569;
   }
   
-  /* 空状态 */
   .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -168,6 +219,43 @@
     font-size: 2rem;
     margin-bottom: 15px;
     color: #cbd5e1;
+  }
+
+  /* 新增分页样式 */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
+  }
+  
+  .pagination-btn {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .pagination-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+    color: #4f46e5;
+    border-color: #c7d2fe;
+  }
+  
+  .pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .pagination-info {
+    font-size: 0.85rem;
+    color: #64748b;
   }
 </style>
 
@@ -202,76 +290,90 @@
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-semibold text-gray-800">我的博客</h3>
             <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              {blogs.length} 篇
+              共 {blogTotalCount} 篇
             </span>
           </div>
           
-            {#if blogs.length > 0}
-            <div class="space-y-5 ">
-              {#each blogs as blog,index}
-                
-              <div class="blog-card "  style="border-left: 3px solid {borderColors[index % 5]};">
-
-                <a href={`/editblog/${blog.id}`} class="block group">
-                  <div class="flex flex-col sm:flex-row gap-4 bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 hover:bg-gray-100">
-                    <!-- 博客封面图 -->
-                    <!-- 修改后的封面图片区域代码 -->
-                    <div class="w-full sm:w-1/3 h-24 sm:h-auto relative overflow-hidden rounded-lg shadow-sm">
- 
-                    <img 
-                        src={uploadpath + blog.data.coverUrl || 'https://picsum.photos/seed/defaultblog/300/200'} 
-                        alt={blog.data.title || '博客封面'} 
-                        class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-105"
-                         
-                    />
-                    <!-- 轻微渐变遮罩增强文字可读性（如果图片上有文字） -->
-                    <div class="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                    
-                    <!-- 博客信息 -->
-                    <div class="w-full sm:w-2/3 p-3 flex flex-col justify-between">
-                      <div>
-                        <h4 class="font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                          {blog.data.title || '无标题'}
-                        </h4>
-                        
-                        <!-- 标签显示 -->
-                        {#if blog.data.labels && blog.data.labels.length > 0}
-                          <div class="flex flex-wrap gap-1 mt-1">
-                            {#each blog.data.labels.slice(0, 2) as label}
-                              <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
-                                {label}
-                              </span>
-                            {/each}
-                            {#if blog.data.labels.length > 2}
-                              <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
-                                +{blog.data.labels.length - 2}
-                              </span>
-                            {/if}
-                          </div>
-                        {/if}
+          {#if blogs.length > 0}
+            <div class="space-y-5">
+              {#each blogs as blog, index}
+                <div class="blog-card" style="border-left: 3px solid {borderColors[index % 5]};">
+                  <a href={`/editblog?blogid=${blog.id}`} class="block group">
+                    <div class="flex flex-col sm:flex-row gap-4 bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 hover:bg-gray-100">
+                      <!-- 博客封面图 -->
+                      <div class="w-full sm:w-1/3 h-24 sm:h-auto relative overflow-hidden rounded-lg shadow-sm">
+                        <img 
+                          src={uploadpath + blog.data.coverUrl || 'https://picsum.photos/seed/defaultblog/300/200'} 
+                          alt={blog.data.title || '博客封面'} 
+                          class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:brightness-105"
+                        />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       </div>
                       
-                      <!-- 日期 -->
-                    <div class="blog-meta">
-                        <div class="blog-date">
-                        <i class="far fa-calendar"></i>
-                        {new Date(blog.servertimestamp).toLocaleDateString('zh-CN', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                      <!-- 博客信息 -->
+                      <div class="w-full sm:w-2/3 p-3 flex flex-col justify-between">
+                        <div>
+                          <h4 class="font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                            {blog.data.title || '无标题'}
+                          </h4>
+                          
+                          <!-- 标签显示 -->
+                          {#if blog.data.labels && blog.data.labels.length > 0}
+                            <div class="flex flex-wrap gap-1 mt-1">
+                              {#each blog.data.labels.slice(0, 2) as label}
+                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
+                                  {label}
+                                </span>
+                              {/each}
+                              {#if blog.data.labels.length > 2}
+                                <span class="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded">
+                                  +{blog.data.labels.length - 2}
+                                </span>
+                              {/if}
+                            </div>
+                          {/if}
                         </div>
-                        <div class="blog-author">
-                        <i class="far fa-user"></i>
-                         
+                        
+                        <!-- 日期 -->
+                        <div class="blog-meta">
+                          <div class="blog-date">
+                            <i class="far fa-calendar"></i>
+                            {new Date(blog.servertimestamp).toLocaleDateString('zh-CN', {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric'
+                            })}
+                          </div>
+                          <div class="blog-author">
+                            <i class="far fa-user"></i>
+                          </div>
                         </div>
+                      </div>
                     </div>
-                    </div>
-                  </div>
-                </a>
+                  </a>
                 </div>
               {/each}
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="pagination">
+              <button 
+                class="pagination-btn" 
+                on:click={prevPage} 
+                disabled={currentPage === 1}
+              >
+                上一页
+              </button>
+              <span class="pagination-info">
+                第 {currentPage} / {totalPages} 页
+              </span>
+              <button 
+                class="pagination-btn" 
+                on:click={nextPage} 
+                disabled={currentPage === totalPages}
+              >
+                下一页
+              </button>
             </div>
           {:else}
             <div class="text-center py-10 bg-gray-50 rounded-lg">
@@ -284,15 +386,8 @@
               <p class="text-sm text-gray-400 mt-1">开始创建你的第一篇博客吧</p>
             </div>
           {/if}
-
- 
-
-
-
-
         </div>
       </div>
     </div>
   </div>
 </div>
-    

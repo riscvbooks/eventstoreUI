@@ -232,6 +232,19 @@
       }
     });
   }
+
+  $: if (initialBlog) {
+    // 使用解构复制，避免直接引用导致的响应式问题
+    blogData = { ...initialBlog };
+     
+  }
+
+ $: if (previewImage && blogData.coverUrl) {
+    previewImage.src = uploadpath + blogData.coverUrl;
+    previewImage.classList.remove('hidden'); // 显示图片
+  } else if (previewImage) {
+    previewImage.classList.add('hidden'); // 隐藏图片（当无封面时）
+  }
 </script>
 
 <style>
@@ -624,7 +637,7 @@
 
           >
  
-          {#if coverImageData===null} 
+          {#if coverImageData===null && !blogData.coverUrl} 
           <i class="fas fa-image text-xl"></i>
           {/if}
         
