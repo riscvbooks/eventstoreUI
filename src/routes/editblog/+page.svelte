@@ -11,12 +11,7 @@
     '#a78bfa', // 亮紫
     '#22d3ee', // 亮青
     '#86efac', // 亮绿
-    '#fcd34d', // 亮黄
     '#fda4af', // 亮粉
-    '#fb923c', // 亮橙
-    '#7dd3fc', // 浅蓝
-    '#c4b5fd', // 浅紫
-    '#a7f3d0'  // 浅绿
   ];
 
   let Keypriv;
@@ -92,14 +87,14 @@
   /* 博客列表 */
   .blog-list {
     display: grid;
-    gap: 18px;
+    gap: 10px;
   }
   
   /* 博客卡片 */
   .blog-card {
     background: white;
     border-radius: 12px;
-    padding: 18px;
+    padding: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
     border-left: 4px solid #60a5fa;
@@ -214,7 +209,7 @@
             <div class="space-y-5 ">
               {#each blogs as blog,index}
                 
-              <div class="blog-card "  style="border-left: 4px solid {borderColors[index % 10]};">
+              <div class="blog-card "  style="border-left: 3px solid {borderColors[index % 5]};">
 
                 <a href={`/editblog/${blog.id}`} class="block group">
                   <div class="flex flex-col sm:flex-row gap-4 bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 hover:bg-gray-100">
