@@ -17,11 +17,23 @@
   let blogData = { ...initialBlog };
   let isMouseInArea = false; // 控制提示框显示
 
+ 
+
   // DOM引用
   let uploadArea;
   let previewImage;
   let fileInput;
 
+  function getBlogId( ) {
+      let url;
+      // 处理传入的URL或使用当前页面URL
+    
+      url = new URL(window.location.href);
+   
+      let Id = url.searchParams.get('blogid');
+      
+      return Id; // 如果不存在会返回null
+  }
 
   let showAddTagInput = false; // 控制添加标签输入框显示
   let newTagName = ""; // 新标签输入值
@@ -220,7 +232,9 @@
       }
     }
 
+    if (getBlogId() ) { blogData.blogId = getBlogId();};
     // 提交博客
+   
     blogData.isPublished = isPublish;
     blogData.updatedAt = new Date().toISOString();
     create_blog(JSON.stringify(blogData), Keypub, Keypriv, (message) => {

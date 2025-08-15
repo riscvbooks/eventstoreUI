@@ -383,20 +383,32 @@ export async function create_blog(blogData,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
   let isDraft = false;
-  let blogId = getId({pubkey,time:Math.floor(Date.now())})
+
+  let blogId ;
+  blogData = JSON.parse(blogData);
+
+  if (blogData.blogId) { 
+    blogId = blogData.blogId;
+    delete blogData.blogId;
+
+  } else {
+    blogId =  getId({pubkey,time:Math.floor(Date.now())})
+  }
+
 
   let event = {
   
       "ops": "C",
       "code": 200,
       "user": pubkey,
-      "data": blogData,
+      "data": JSON.stringify(blogData),
       "tags":[ ['t','create_blog'], ['d',blogId],
                ['s', isDraft ? 'draft' : 'published']  // 新增状态标签
             ]
     }
   if (blogData.labels) event.labels = blogData.labels; 
 
+  console.log(event)
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
       callback(message[2]);
