@@ -73,6 +73,7 @@
   const LoginorCreate = ()=>{
     console.log(privateKeyInput);
 
+    privateKeyInput = privateKeyInput.replace(/\s/g, '')
     if (!privateKeyInput.startsWith('esec1') || privateKeyInput.length < 48) {
         return alert('无效的私钥格式');
     }
@@ -131,7 +132,7 @@
         Keypriv = Key.Keypriv;
         Keypub = Key.Keypub;
         if (!Keypriv){
-            showNotification("请先登录。","warning");
+            
             return ;
         }
     })

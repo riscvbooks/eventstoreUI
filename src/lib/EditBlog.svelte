@@ -253,11 +253,21 @@
      
   }
 
- $: if (previewImage && blogData.coverUrl) {
-    previewImage.src = uploadpath + blogData.coverUrl;
-    previewImage.classList.remove('hidden'); // 显示图片
-  } else if (previewImage) {
-    previewImage.classList.add('hidden'); // 隐藏图片（当无封面时）
+  // 优化图片显示的响应式逻辑
+  $: if (previewImage) {
+    // 当有封面图URL时显示图片
+    if (blogData.coverUrl) {
+      previewImage.src = uploadpath + blogData.coverUrl;
+      previewImage.classList.remove('hidden');
+    } 
+    // 当有本地选择的图片时显示图片
+    else if (coverImageData) {
+      previewImage.classList.remove('hidden');
+    } 
+    // 否则隐藏图片
+    else {
+      previewImage.classList.add('hidden');
+    }
   }
 </script>
 
@@ -329,6 +339,7 @@
   }
 
   .upload-preview {
+    position: relative; /* 为内部元素定位提供基准 */
     width: 4rem;
     height: 4rem;
     background: #F3F4F6;
@@ -350,20 +361,23 @@
     color: #4F46E5;
   }
 
-  /* 预览图片 */
+  /* 预览图片样式修复 */
   #previewImage {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    display: none;
+    object-fit: cover; /* 确保图片填满容器且不变形 */
+    display: none; /* 初始隐藏 */
   }
 
+  /* 移除 .hidden 类时显示图片（提高优先级） */
   #previewImage:not(.hidden) {
-    display: block;
+    display: block !important; /* 强制显示 */
+    z-index: 1; /* 确保图片在图标上方 */
   }
 
-  #previewImage:not(.hidden) + i {
-    display: none;
+  /* 图片显示时隐藏图标（优化选择器优先级） */
+  .upload-preview #previewImage:not(.hidden) ~ i.fas.fa-image {
+    display: none !important;
   }
 
   /* 上传按钮 */
@@ -543,7 +557,6 @@
   .tag-remove-btn:hover {
     opacity: 1;
   }
-
 </style>
 
 <!-- 编辑器主体 -->
@@ -567,7 +580,7 @@
       >
     </div>
 
-    <!-- 文章标签区域（修改部分） -->
+    <!-- 文章标签区域 -->
     <div class="form-group">
         <label class="form-label">文章标签</label>
         <div class="categories">
@@ -626,7 +639,7 @@
         </div>
     </div>
 
-    <!-- 文章封面（核心修复区域） -->
+    <!-- 文章封面 -->
     <div class="form-group">
       <!-- 标题 -->
       <label class="form-label">文章封面</label>
@@ -648,14 +661,10 @@
           on:mouseenter={() => isMouseInArea = true}
           on:mouseleave={() => isMouseInArea = false}
           class:upload-preview--active={isMouseInArea}
-
-          >
- 
-          {#if coverImageData===null && !blogData.coverUrl} 
-          <i class="fas fa-image text-xl"></i>
+        >
+          {#if coverImageData === null && !blogData.coverUrl} 
+            <i class="fas fa-image text-xl"></i>
           {/if}
-        
-          
           <img id="previewImage" class="hidden" alt="封面预览" bind:this={previewImage}>
         </div>
         
