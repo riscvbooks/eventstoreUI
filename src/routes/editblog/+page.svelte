@@ -6,6 +6,8 @@
   import { upload_file, create_blog, get_blogs, 
     get_books, blog_counts,get_blog_id } from "$lib/esclient";
   import EditBlog from '$lib/EditBlog.svelte';
+ 
+ 
 
   const borderColors = [
     '#60a5fa', // 亮蓝
@@ -18,7 +20,7 @@
   let Keypriv;
   let Keypub;
  
-  let blogId = "";
+  let blogId =  "";
   // 存储博客基本数据
   let blogData = {
     title: '',
@@ -35,7 +37,8 @@
   let blogTotalCount = 0; // 总博客数量
 
   // 计算总页数
-  $: totalPages = Math.ceil(blogTotalCount / pageSize) || 1;
+ 
+  let totalPages =  Math.ceil(blogTotalCount / pageSize) || 1;
 
   // 保存成功后刷新当前页数据
   async function handleSaveSuccess(blog) {
@@ -94,8 +97,9 @@
       
       return Id; // 如果不存在会返回null
   }
-
+ 
   onMount(async () => {
+    
     // 初始化用户密钥
     const Key = getKey();
     Keypriv = Key.Keypriv;
@@ -115,7 +119,7 @@
                 }
                 let b = JSON.parse(message.data);
                 blogData = b;
-                
+                 
             }
         })
     }
@@ -129,6 +133,20 @@
     // 2. 加载第一页数据
     await loadBlogs(1);
   });
+
+ 
+  async function handleBlogClick(currentBlogId, e) {
+    if (blogId == currentBlogId) return ;
+
+    window.location.href = "/editblog?blogid=" + currentBlogId;
+
+
+ 
+  }
+ 
+
+ 
+
 </script>
 
 <style>
@@ -298,7 +316,7 @@
             <div class="space-y-5">
               {#each blogs as blog, index}
                 <div class="blog-card" style="border-left: 3px solid {borderColors[index % 5]};">
-                  <a href={`/editblog?blogid=${blog.id}`} class="block group">
+                  <a href={`/editblog?blogid=${blog.id}`} on:click|preventDefault={(e) => handleBlogClick(blog.id, e)} class="block group">
                     <div class="flex flex-col sm:flex-row gap-4 bg-gray-50 rounded-lg overflow-hidden transition-all duration-300 hover:bg-gray-100">
                       <!-- 博客封面图 -->
                       <div class="w-full sm:w-1/3 h-24 sm:h-auto relative overflow-hidden rounded-lg shadow-sm">

@@ -132,6 +132,7 @@
   function handleImageFile(blob) {
     const reader = new FileReader();
     reader.onload = (event) => {
+      blogData.coverUrl = "";
       previewImage.src = event.target.result;
       previewImage.classList.remove('hidden');
       
