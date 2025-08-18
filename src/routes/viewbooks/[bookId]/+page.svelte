@@ -34,6 +34,18 @@
     }
    }
 
+  function getFrom( ) {
+      let url;
+ 
+      url = new URL(window.location.href);
+ 
+      
+      // 从查询参数中获取bookid（searchParams是处理URL查询参数的API）
+      let value = url.searchParams.get('from');
+      
+      return value; // 如果不存在会返回null
+  }
+
   function handleChapterSelect(item) {
     console.log('选中章节:', item);
      
@@ -60,9 +72,9 @@
     return null; // 未找到章节节点
   }
 
-  function loadChapterContent(chapterId) {
+  async function loadChapterContent(chapterId) {
     
-    get_chapter(bookId, chapterId, (message) => {
+    await get_chapter(bookId, chapterId, (message) => {
       if (message !== "EOSE" && message.data) {
         currentChapterContent = message.data;
       }  
@@ -93,12 +105,12 @@
             }
         }
 
-        await get_chapter(bookId,"outline.md",function(message){
+        await get_chapter(bookId,"outline.md",async function(message){
             if (message != "EOSE"){
                 
                 initialOutline = JSON.parse(message.data)
                 let firstChapter = findFirstChapterNode(initialOutline)
-                if (firstChapter) loadChapterContent(firstChapter.id)
+                if (firstChapter) await loadChapterContent(firstChapter.id)
             }
         });
 
@@ -572,7 +584,7 @@
     <aside class="book-sidebar">
         <!-- 书籍信息 -->
       <div class="back-home-container">
-        <button class="back-home-btn" on:click={() => window.location.href = '/viewbooks'}>
+        <button class="back-home-btn" on:click={() => history.back()}>
           <i class="fa fa-home mr-2"></i>返回
         </button>
       </div>
