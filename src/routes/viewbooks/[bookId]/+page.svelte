@@ -26,7 +26,9 @@
    let globalClickId;
    async function handleSetClickId(item) {
     globalClickId = item.id;
-
+ 
+    if (item.type === 'folder')
+      return;
     currentChapterContent = "";
     const tocContainer = document.getElementById('right-toc');
     if (tocContainer) {
