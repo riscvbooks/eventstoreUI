@@ -148,7 +148,9 @@
     window.location.href = "/editblog"
   }
  
-
+ function handleView(){
+    window.location.href = "/viewblog?blogid=" + getBlogId();
+ }
  
 
 </script>
@@ -304,6 +306,31 @@
     transform: translateY(0);
   }
 
+  .preview-btn {
+    padding: 8px 16px;
+    background: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+  }
+  
+  .preview-btn:hover {
+    background: #0284c7;
+    transform: translateY(-1px);
+  }
+  
+  .preview-btn:active {
+    transform: translateY(0);
+  }
+
+
 </style>
 
 <svelte:head>
@@ -320,12 +347,24 @@
         <p class="text-gray-600 mt-2">创建和编辑你的博客文章</p>
       </div>
       <!-- 🌟 新增：新建博客按钮 -->
-      <button on:click={createNewBlog} class="new-blog-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        新建博客
-      </button>
+      <div class="flex gap-3">
+        <!-- 🌟 新增：预览按钮 -->
+        <button on:click={handleView} class="preview-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          浏览
+        </button>
+        
+        <!-- 新建博客按钮 -->
+        <button on:click={createNewBlog} class="new-blog-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          新建博客
+        </button>
+      </div>
     </div>
     
     <!-- 左右分栏布局 -->
