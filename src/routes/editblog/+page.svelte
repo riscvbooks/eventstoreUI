@@ -127,6 +127,7 @@
     await blog_counts(Keypub, message => {
       if (message.code == 200) {
         blogTotalCount = message.counts;
+        totalPages =  Math.ceil(blogTotalCount / pageSize) || 1;
       }
     });
 
@@ -142,6 +143,9 @@
 
 
  
+  }
+  function createNewBlog(){
+    window.location.href = "/editblog"
   }
  
 
@@ -275,6 +279,31 @@
     font-size: 0.85rem;
     color: #64748b;
   }
+
+    /* 🌟 新增：新建博客按钮样式 */
+  .new-blog-btn {
+    padding: 8px 16px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .new-blog-btn:hover {
+    background: #4338ca;
+    transform: translateY(-1px);
+  }
+  
+  .new-blog-btn:active {
+    transform: translateY(0);
+  }
+
 </style>
 
 <svelte:head>
@@ -284,10 +313,19 @@
 <!-- 主容器 -->
 <div class="min-h-screen bg-gray-50">
   <div class="container mx-auto px-4 py-6 max-w-7xl">
-    <!-- 页面标题 -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">博客管理</h1>
-      <p class="text-gray-600 mt-2">创建和编辑你的博客文章</p>
+    <!-- 页面标题和新建按钮 -->
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">博客管理</h1>
+        <p class="text-gray-600 mt-2">创建和编辑你的博客文章</p>
+      </div>
+      <!-- 🌟 新增：新建博客按钮 -->
+      <button on:click={createNewBlog} class="new-blog-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        新建博客
+      </button>
     </div>
     
     <!-- 左右分栏布局 -->
