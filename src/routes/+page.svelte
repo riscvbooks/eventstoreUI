@@ -517,7 +517,7 @@
                   <div class="flex-1">
                      
                     <h3 class="font-semibold text-lg mb-2 hover:text-blue-600 transition-colors duration-200">
-                      <a href="#">{blog.data.title}</a>
+                      <a href="/viewblog?blogid={blog.id}">{blog.data.title}</a>
                     </h3>
                      <div class="flex items-center text-sm text-gray-500 mb-1">
                       <span class="flex items-center mr-3">
