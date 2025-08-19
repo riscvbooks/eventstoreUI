@@ -291,6 +291,9 @@
   $: if (initialBlog) {
     // 使用解构复制，避免直接引用导致的响应式问题
     blogData = { ...initialBlog };
+    if (simplemde){
+      simplemde.value(blogData.content);
+    }
      
   }
 
