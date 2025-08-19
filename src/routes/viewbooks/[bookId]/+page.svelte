@@ -235,12 +235,12 @@
 
 .outline-tree {
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1;
 }
 
 /* 大纲项样式 */
 .outline-item {
-  padding: 0.5rem 0.8rem;
+   
   margin: 0.3rem 0;
   border-radius: 8px;
   transition: all 0.2s ease;
