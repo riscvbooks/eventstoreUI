@@ -109,6 +109,46 @@
     document.body.appendChild(script);
   }
 
+  const insertImageButton = {
+      name: 'insertImage',
+      action: function (editor) {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', async (event) => {
+              const file = event.target.files[0];
+              if (file) {
+                                    // 创建文件读取器
+                const reader = new FileReader();
+
+                // 读取完成后处理
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    // 调用上传函数，使用原文件的名称
+                    upload_file(file.name, uint8Array, Keypub, Keypriv, function(message) {
+                        if (message[2].code == 200) {
+                            let url = message[2].fileUrl;
+                            const cm = editor.codemirror;
+                            const cursor = cm.getCursor();
+                            // 插入Markdown格式的图片链接
+                            const imageMarkdown = `![图片](${uploadpath + url})\n`;
+                            cm.replaceRange(imageMarkdown, cursor);
+                            cm.setCursor(cursor.line + 1, 0);
+                        }
+                    });
+                };
+                  // 读取文件为ArrayBuffer
+                reader.readAsArrayBuffer(file);
+              }
+          });
+          input.click();
+      },
+      className: 'fa fa-camera',
+      title: '上传图片'
+  };
+
   // 初始化编辑器
   function initEditor(SimpleMDE) {
     simplemde = new SimpleMDE({
@@ -121,7 +161,7 @@
         'unordered-list', 'ordered-list', '|',
         'link', 'image', 'table', '|',
         'quote', 'code', '|',
-        'preview', 'side-by-side', 'fullscreen', '|',
+        'preview', 'side-by-side', 'fullscreen',insertImageButton, '|',
         'guide'
       ],
       initialValue: blogData.content || `# 欢迎使用创作中心\n\n在这里开始撰写您的博客...`
