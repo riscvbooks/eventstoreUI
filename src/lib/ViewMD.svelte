@@ -36,6 +36,7 @@
 
     // 配置 Docsify 自定义渲染器
     window.$docsify = {
+      notFoundPage: false,
       markdown: {
         renderer: {
           code: (code: string, lang: string) => codeBlockRenderer(code, lang)
@@ -174,6 +175,7 @@
             setTimeout(() => {
                 if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
                     compiledContent = window.__current_docsify_compiler__.compile(precontent);
+                    
                 } else {
                     console.warn('Docsify 编译器仍未加载完成');
                 }
