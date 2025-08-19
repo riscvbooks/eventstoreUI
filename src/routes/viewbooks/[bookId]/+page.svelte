@@ -92,21 +92,9 @@
         document.head.appendChild(css);
 
         // 动态加载 JS
-        const js = document.createElement('script');
-        js.src = '/static/js/docsify.min.js';
-        document.body.appendChild(js);
 
-        const styleElements = document.getElementsByTagName('style');
-        let targetStyleElement = null;
-        for (let i = 0; i < styleElements.length; i++) {
-            const element = styleElements[i];
-            const dataViteDevId = element.getAttribute('data-vite-dev-id');
-            if (dataViteDevId && dataViteDevId.includes('app.css')) {            
-                element.parentNode.removeChild(element);
-                break;
-            }
-        }
 
+ 
         await get_chapter(bookId,"outline.md",async function(message){
             if (message != "EOSE"){
                 
@@ -132,6 +120,10 @@
 </script>
 
 <style>
+
+:global{
+
+
 /* 基础布局样式 */
 .book-view-container {
   display: flex;
@@ -375,6 +367,7 @@
   background: rgba(255, 255, 255, 0.95);
   border-left: 1px solid rgba(0, 0, 0, 0.05);
   padding: 1.8rem 0;
+  padding-left:1rem;
   overflow-y: auto;
   box-shadow: -2px 0 15px rgba(0, 0, 0, 0.03);
   backdrop-filter: blur(10px);
@@ -394,12 +387,7 @@
   border-bottom: 2px solid rgba(79, 70, 229, 0.15);
 }
 
- 
-/* TOC 项基础样式 */
-.toc-item {
-  margin: 0.4rem 0;
-  transition: all 0.2s ease;
-}
+
 
 .toc-link {
   display: block;
@@ -412,10 +400,20 @@
   border-right: 3px solid transparent;
 }
 
-/* TOC 项交互效果 */
-.toc-item:hover .toc-link {
-  color: #4F46E5;
-  background-color: rgba(79, 70, 229, 0.03);
+
+/* 每个目录项 */
+.toc-item {
+  margin: 6px 0;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* 鼠标悬停效果 */
+.toc-item:hover {
+  color: #1D4ED8; /* 蓝色文字 */
+  background-color: rgba(59, 130, 246, 0.1); /* 浅蓝背景 */
+  cursor: pointer;
 }
 
 .toc-link.active {
@@ -491,13 +489,7 @@
   /* 保留原有其他样式（宽度、背景等） */
 }
 
-/* 右侧 TOC 容器：固定高度 + 内部滚动 */
-.right-toc-container {
-  height: 100vh; /* 与视口等高 */
-  padding: 1.8rem 0;
-  overflow-y: auto; /* 内容超出时显示滚动条 */
-  /* 保留原有其他样式（宽度、背景等） */
-}
+ 
 
 /* 中间内容区：固定高度 + 独立滚动 */
 .book-content {
@@ -574,6 +566,8 @@
     padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
   }
+}
+
 }
 
 </style>

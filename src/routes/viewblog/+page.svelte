@@ -38,10 +38,6 @@
     css.href = '/static/css/vue.css';
     document.head.appendChild(css);
 
-    const js = document.createElement('script');
-    js.src = '/static/js/docsify.min.js';
-    document.body.appendChild(js);
-
     blogId = getBlogId();
 
     if (blogId) {
@@ -64,6 +60,9 @@
 </script>
 
 <style>
+:global {
+
+
   .blog-content p {
     margin-bottom: 1.5rem;
     line-height: 1.7;
@@ -165,6 +164,52 @@
       padding: 0 0.5rem;
     }
   }
+
+  .toc-container {
+  background: #f9f9f9;       /* 背景色 */
+  border-left: 3px solid #4CAF50; /* 左边装饰线 */
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 14px;
+}
+
+.toc-item {
+  margin: 5px 0;
+  transition: all 0.2s;
+}
+
+.toc-link {
+  text-decoration: none;
+  color: #333;
+  display: inline-block;
+  width: 100%;
+}
+
+.toc-link:hover {
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.toc-link.active {
+  color: #4CAF50;
+  font-weight: bold;
+  position: relative;
+}
+
+.toc-link.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background-color: #4CAF50;
+  border-radius: 50%;
+}
+
+}
 </style>
 
 <svelte:head>

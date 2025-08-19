@@ -1,263 +1,197 @@
 <script lang="ts">
-    import { processMarkdownImages,codeCopy} from '$lib/docsify_plugin';
-    import { onMount } from 'svelte';
-    import { getContext ,afterUpdate} from'svelte';
+  import { onMount, afterUpdate } from 'svelte';
+  import { processMarkdownImages, codeCopy } from '$lib/docsify_plugin';
 
-    export let mdcontent;
-    let compiledContent;
+  export let mdcontent: string;
+  let compiledContent: string = '';
+  let container: HTMLElement;
 
-    // 配置：最大标题级别（h1~h3）
-    const tocMaxLevel = 3;
+  // TOC 配置
+  const tocMaxLevel = 3;
+  let tocList: any[] = [];
 
-    // 存储目录项和对应内容的数组
-    let tocList = []; // 目录列表：[{ level, text, id, content }, ...]
-    let currentHeadings = []; // 临时存储页面所有标题元素
+  // ---------------- Mermaid + Docsify 初始化 ----------------
+  async function loadScript(src: string) {
+    return new Promise<void>((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(script);
+    });
+  }
 
-    /**
-    * 生成单个目录项的 HTML
-    * @param {number} level - 标题级别（1~3）
-    * @param {string} text - 标题文本
-    * @param {string} id - 标题唯一ID（用于锚点）
-    * @returns {string} 目录项HTML
-    */
-    function generateToC(level, text, id) {
-        if (level >= 1 && level <= tocMaxLevel) {
-            // 生成带锚点的目录项，级别不同缩进不同
-            const indent = (level - 1) * 15; // 每级缩进15px
-            return `
-            <div class="toc-item lv${level}" style="padding-left: ${indent}px">
-                <a href="#${id}" class="toc-link">${text}</a>
-            </div>
-            `;
-        }
-        return '';
-    }
+  async function loadDocsifyAndMermaid() {
+    // 动态加载 Mermaid
+    await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js');
+    // 动态加载 Docsify
+    await loadScript('/static/js/docsify.min.js');
 
-    /**
-    * 提取单个标题的信息并添加到目录
-    * @param {HTMLElement} heading - 标题元素（h1~h3）
-    */
-    function addToToc(heading) {
-        // 1. 提取标题级别（h1→1，h2→2，h3→3）
-        const level = parseInt(heading.tagName.replace(/h/gi, ''), 10);
-        if (isNaN(level) || level < 1 || level > tocMaxLevel) return;
-
-        // 2. 提取标题文本和ID（无ID则自动生成）
-        const text = heading.textContent.trim();
-        let id = heading.id;
-        if (!id) {
-            id = `toc-${Date.now()}-${level}`; // 生成唯一ID
-            heading.id = id; // 给标题添加ID，用于锚点跳转
-        }
-
-        // 3. 提取标题对应的内容（当前标题到下一个同级/高级标题之间的内容）
-        const content = extractHeadingContent(heading, level);
-
-        // 4. 添加到目录列表
-        tocList.push({ level, text, id, content });
-    }
-
-    /**
-    * 提取标题对应的内容（当前标题到下一个标题之间的内容）
-    * @param {HTMLElement} currentHeading - 当前标题元素
-    * @param {number} currentLevel - 当前标题级别
-    * @returns {string} 标题对应的HTML内容
-    */
-    function extractHeadingContent(currentHeading, currentLevel) {
-
-        const contentElements = [];
-        let nextSibling = currentHeading.nextElementSibling;
-
-        // 遍历后续元素，直到遇到同级或更高级别的标题为止
-        while (nextSibling) {
-            // 检查下一个元素是否是标题
-            if (nextSibling.tagName.match(/^H[1-3]$/)) {
-            const nextLevel = parseInt(nextSibling.tagName.replace(/h/gi, ''), 10);
-            // 如果下一个标题级别 ≤ 当前级别，停止收集（说明进入新章节）
-            if (nextLevel <= currentLevel) break;
-            }
-            // 收集内容元素
-            contentElements.push(nextSibling.cloneNode(true));
-            nextSibling = nextSibling.nextElementSibling;
-        }
-
-        // 将收集的元素转换为HTML字符串
-        const tempDiv = document.createElement('div');
-        contentElements.forEach(el => tempDiv.appendChild(el));
-        return tempDiv.innerHTML;
-    }
-
-    /**
-    * 提取页面中所有h1~h3标题，生成目录和内容
-    * @returns {Object} { tocHtml: 目录HTML, tocData: 目录数据数组 }
-    */
-    function extractHeadingsAndContent() {
-        // 重置存储数组
-        tocList = [];
-        currentHeadings = [];
-
-        // 1. 获取页面中所有h1~h3标题（按出现顺序）
-        const allHeadings = document.querySelectorAll('h1, h2, h3');
-        currentHeadings = Array.from(allHeadings).filter(heading => {
-            // 筛选条件：有id且非空
-            return !!heading.id?.trim();
-        });
-
-        // 2. 遍历标题，生成目录和提取内容
-        currentHeadings.forEach(heading => addToToc(heading));
-
-        // 3. 生成完整目录HTML
-        const tocHtml = tocList.map(item => generateToC(item.level, item.text, item.id)).join('');
-
-        // 返回目录HTML和结构化数据
-        return {
-            tocHtml: `<div class="toc-container" style="margin-left:1rem;">${tocHtml}</div>`,
-            tocData: tocList // 包含每个标题的级别、文本、ID、内容
-        };
-    }
-
-
-
-    onMount(async () => {
-
-    
-
+    // 初始化 Mermaid
+    window.mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose'
     });
 
-    function formatTimestamp(timestamp) {
-        if (String(timestamp).length < 13) {
-            timestamp = timestamp * 1000;
+    // 配置 Docsify 自定义渲染器
+    window.$docsify = {
+      markdown: {
+        renderer: {
+          code: (code: string, lang: string) => codeBlockRenderer(code, lang)
         }
-        const date = new Date(timestamp);
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
+      }
+    };
+  }
+
+  // ---------------- Markdown 代码块渲染 ----------------
+  function codeBlockRenderer(code: string, lang: string) {
+    if (lang === 'mermaid') {
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      return `<div id="${id}" class="mermaid">${code}</div>`; // 先插入代码
+    } else {
+      return `<pre><code class="language-${lang}">${code}</code></pre>`;
+    }
+  }
+
+  // ---------------- TOC 生成函数 ----------------
+    function generateToC(level: number, text: string, id: string) {
+        const indent = (level - 1) * 20; // 每级缩进20px
+        return `
+            <div class="toc-item lv${level}" style="padding-left: ${indent}px;">
+            <a href="#${id}" class="toc-link">${text}</a>
+            </div>
+        `;
     }
 
-        // 新增：初始化 TOC 滚动高亮
-    function initTocScrollHighlight(tocData) {
-        // 移除旧的滚动监听
-        window.removeEventListener('scroll', handleTocScroll);
-        
-        // 优化：滚动高亮函数中同步 URL 哈希（可选）
-        function handleTocScroll() {
-            const scrollY = window.scrollY + 100;
-            let activeId = '';
-            
-            tocData.forEach(item => {
-                const heading = document.getElementById(item.id);
-                if (heading) {
-                const rect = heading.getBoundingClientRect();
-                if (rect.top <= 100 && rect.bottom >= 0) {
-                    activeId = item.id;
-                }
-                }
-            });
-            
-            // 更新高亮状态
-            const links = document.querySelectorAll('.toc-link');
-            links.forEach(link => {
-                link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`);
-            });
-            
-            // 同步 URL 哈希（可选）
-            if (activeId && window.location.hash !== `#${activeId}`) {
-                history.replaceState(null, null, `#${activeId}`);
-            }
+  function extractHeadingContent(currentHeading: HTMLElement, currentLevel: number) {
+    const contentElements: HTMLElement[] = [];
+    let nextSibling = currentHeading.nextElementSibling;
+    while (nextSibling) {
+      if (/H[1-3]/.test(nextSibling.tagName)) {
+        const nextLevel = parseInt(nextSibling.tagName.replace('H',''));
+        if (nextLevel <= currentLevel) break;
+      }
+      contentElements.push(nextSibling.cloneNode(true) as HTMLElement);
+      nextSibling = nextSibling.nextElementSibling;
+    }
+    const tempDiv = document.createElement('div');
+    contentElements.forEach(el => tempDiv.appendChild(el));
+    return tempDiv.innerHTML;
+  }
+
+  function extractHeadingsAndContent() {
+    tocList = [];
+    const allHeadings = container.querySelectorAll('h1, h2, h3');
+    allHeadings.forEach(heading => {
+      const level = parseInt(heading.tagName.replace('H',''));
+      if (level < 1 || level > tocMaxLevel) return;
+      const text = heading.textContent.trim();
+      if (!heading.id) heading.id = `toc-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+      const id = heading.id;
+      const content = extractHeadingContent(heading, level);
+      tocList.push({ level, text, id, content });
+    });
+    const tocHtml = tocList.map(item => generateToC(item.level, item.text, item.id)).join('');
+    return { tocHtml: `<div class="toc-container">${tocHtml}</div>`, tocData: tocList };
+  }
+
+  function initTocScrollHighlight(tocData: any[]) {
+    function handleScroll() {
+      const scrollY = window.scrollY + 100;
+      let activeId = '';
+      tocData.forEach(item => {
+        const heading = document.getElementById(item.id);
+        if (heading) {
+          const rect = heading.getBoundingClientRect();
+          if (rect.top <= 100 && rect.bottom >= 0) activeId = item.id;
         }
-        
-        window.addEventListener('scroll', handleTocScroll);
-        // 初始触发一次，设置默认高亮
-        handleTocScroll();
+      });
+      const links = document.querySelectorAll('.toc-link');
+      links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`));
+    }
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+  }
+
+  function bindTocClickEvents() {
+    const tocLinks = document.querySelectorAll('.toc-link');
+    tocLinks.forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href').replace('#','');
+        const el = document.getElementById(targetId);
+        if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
+        history.pushState(null,null, `#${targetId}`);
+      });
+    });
+  }
+
+  // ---------------- afterUpdate 渲染 Mermaid + TOC ----------------
+  afterUpdate(async () => {
+    if (!container) return;
+
+    // 1️⃣ 代码复制
+    codeCopy();
+
+    // 2️⃣ TOC
+    const tocResult = extractHeadingsAndContent();
+    const tocContainer = document.getElementById('right-toc');
+    if (tocContainer) {
+      tocContainer.innerHTML = tocResult.tocHtml;
+      initTocScrollHighlight(tocResult.tocData);
+      bindTocClickEvents();
     }
 
-    function bindTocClickEvents() {
-        const tocLinks = document.querySelectorAll('#right-toc .toc-link');
-        
-        tocLinks.forEach(link => {
-            link.addEventListener('click', (e) => {
-            // 1. 阻止默认跳转行为（避免页面重新加载或URL哈希变化导致的闪烁）
-            e.preventDefault();
-            
-            // 2. 获取目标锚点 ID（从 href 中提取，如 "#environment" → "environment"）
-            const targetId = link.getAttribute('href').replace('#', '');
-            if (!targetId) return;
-            
-            // 3. 查找对应的标题元素
-            const targetElement = document.getElementById(targetId);
-            if (targetElement) {
-                // 4. 平滑滚动到目标元素（距离顶部留 20px 边距）
-                targetElement.scrollIntoView({
-                behavior: 'smooth', // 平滑滚动
-                block: 'start', // 对齐方式：顶部对齐
-                inline: 'nearest'
-                });
-                
-                // 5. 手动更新 URL 哈希（可选，保持 URL 与当前章节同步）
-                history.pushState(null, null, `#${targetId}`);
-            }
-            });
-        });
+    // 3️⃣ Mermaid 渲染
+    if (window.mermaid) {
+      const mermaidBlocks = container.querySelectorAll('.mermaid');
+      for (const block of mermaidBlocks) {
+        const code = block.textContent;
+        if (!code) continue;
+        const id = block.id || `mermaid-${Date.now()}-${Math.random().toString(36).substr(2,5)}`;
+        block.id = id;
+        try {
+          const obj = await window.mermaid.render(`mermaid-svg-${id}`, code);
+          block.innerHTML = obj.svg;
+        } catch(err) {
+          console.error(`Mermaid render error for ${id}:`, err);
+        }
+      }
     }
+  });
 
-
-
-   $: if (mdcontent) { 
- 
+  // ---------------- mdcontent 变化时重新编译 ----------------
+    $: if (mdcontent) {
         let precontent = processMarkdownImages(mdcontent);
-        if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile){
+
+        if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
+             
             compiledContent = window.__current_docsify_compiler__.compile(precontent);
+             
         } else {
+            
             setTimeout(() => {
-                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__?.compile) {
+                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
                     compiledContent = window.__current_docsify_compiler__.compile(precontent);
                 } else {
-                    // 可选：多次重试或错误处理
-                    console.warn('docsify编译器仍未加载完成');
+                    console.warn('Docsify 编译器仍未加载完成');
                 }
-            }, 1000); 
+            }, 1000);
         }
-        
-         
     }
-
-    let container;
-    
-    afterUpdate(() => {
-        if (container?.innerHTML) {
-            codeCopy();
-            
-            const result = extractHeadingsAndContent();
-            
-            // 输出目录HTML（可插入到右侧TOC容器）
-            console.log('目录HTML:', result.tocHtml);
-            
-            // 输出结构化数据（包含每个标题的内容）
-            console.log('标题数据:', result.tocData);
-
-            // 示例：将目录插入到右侧容器
-            const tocContainer = document.getElementById('right-toc');
-            if (tocContainer) {
-                tocContainer.innerHTML = result.tocHtml;
-                initTocScrollHighlight(result.tocData);
-                bindTocClickEvents();
-            }
-        } 
-
-    });
-
- 
- 
-
- 
-
+  onMount(async () => {
+    await loadDocsifyAndMermaid();
+  });
 </script>
 
-            <div class="md-content">
-                <article class="markdown-section" id="main" bind:this={container}>
-                     {@html compiledContent}
-                </article>
-            </div>
+<style>
+
+
+</style>
+
+<div class="md-content">
+  <article class="markdown-section" bind:this={container}>
+    {@html compiledContent}
+  </article>
+</div>
