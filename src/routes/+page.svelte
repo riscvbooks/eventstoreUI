@@ -3,6 +3,7 @@
 
   import {uploadpath} from "$lib/config";
   import {get_books,get_blogs,get_users_profile} from "$lib/esclient";
+  import Carousel from "$lib/Carousel.svelte";
 
  
 
@@ -297,36 +298,40 @@
             </a>
             </div>
         </div>
-        <div class="md:w-1/2 flex justify-center md:justify-end">
-            <div class="relative w-full max-w-md">
-            <div class="relative">
-                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl blur-xl opacity-70"></div>
-                <img src="https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="系统编程技术" class="relative rounded-xl shadow-xl w-full h-auto object-cover border-4 border-white/10">
+        <div class="md:w-1/2 flex justify-center md:justify-end relative">
+          <div class="relative w-full max-w-md">
+            <!-- 背景渐变 -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl blur-xl opacity-70"></div>
+            
+            <!-- Carousel -->
+            <div class="relative z-10">
+              <Carousel />
             </div>
-            <div class="absolute -bottom-4 -left-4 bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-                <div class="flex items-center gap-2">
-                <div class="text-blue-600">
-                    <i class="fa fa-book text-2xl"></i>
-                </div>
-                <div>
-                    <p class="text-gray-900 font-semibold">50+</p>
-                    <p class="text-xs text-gray-500">专业技术书籍</p>
-                </div>
-                </div>
+
+            <!-- 左下角统计卡，向左下移动更多 -->
+            <div class="absolute -bottom-10 -left-10 bg-white p-3 rounded-lg shadow-lg border border-gray-100 flex items-center gap-2 z-20">
+              <div class="text-blue-600">
+                <i class="fa fa-book text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-gray-900 font-semibold">50+</p>
+                <p class="text-xs text-gray-500">专业技术书籍</p>
+              </div>
             </div>
-            <div class="absolute -top-4 -right-4 bg-white p-3 rounded-lg shadow-lg border border-gray-100">
-                <div class="flex items-center gap-2">
-                <div class="text-purple-600">
-                    <i class="fa fa-file-text text-2xl"></i>
-                </div>
-                <div>
-                    <p class="text-gray-900 font-semibold">120+</p>
-                    <p class="text-xs text-gray-500">技术博客文章</p>
-                </div>
-                </div>
+
+            <!-- 右上角统计卡，向右上移动更多 -->
+            <div class="absolute -top-10 -right-10 bg-white p-3 rounded-lg shadow-lg border border-gray-100 flex items-center gap-2 z-20">
+              <div class="text-purple-600">
+                <i class="fa fa-file-text text-2xl"></i>
+              </div>
+              <div>
+                <p class="text-gray-900 font-semibold">120+</p>
+                <p class="text-xs text-gray-500">技术博客文章</p>
+              </div>
             </div>
-            </div>
+          </div>
         </div>
+
         </div>
     </div>
     </section>
