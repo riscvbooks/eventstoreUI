@@ -4,22 +4,24 @@
   import {uploadpath} from "$lib/config";
   import {get_books,get_blogs,get_users_profile} from "$lib/esclient";
   import Carousel from "$lib/Carousel.svelte";
-
+ 
+  export let data;
  
 
- function getTagValue(tags,t) {
-  const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
-  return dTag ? dTag[1] : null;
-}
+  function getTagValue(tags,t) {
+    const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
+    return dTag ? dTag[1] : null;
+  }
 
 
-  let books = [];
-  let blogs = [];
-  let users_pubkey = [];
-  let users_profile = {};
-  let displayedBooks = [...books];
+  let books = data.books;
+  let blogs = data.blogs;;
+   
+  let users_profile = data.users_profile;
+
+  let displayedBooks = data.books;
   function handleBooks(e){
-    console.log(e);
+     
     if (e != "EOSE"){
         // 改变bookId
         if (getTagValue(e.tags,'d')){
@@ -30,7 +32,7 @@
     } else {
         displayedBooks = [...books]
     }
-    console.log(displayedBooks)
+     
   }
 
   
@@ -51,7 +53,7 @@
       if (getTagValue(message.tags,'d')){
           message.id = getTagValue(message.tags,'d');
       } 
-      console.log(message)
+      
       temp.push(message)
       if (message.user && !users_pubkey.includes(message.user)) {
          users_pubkey.push(message.user);
@@ -69,8 +71,8 @@
     onMount(async () => {
  
           //offset 0, limit 20
-        await get_books(null,0,4,handleBooks);
-        await get_blogs(null, 0, 0, 3,handle_blogs);
+        //await get_books(null,0,4,handleBooks);
+        //await get_blogs(null, 0, 0, 3,handle_blogs);
     });
 
  

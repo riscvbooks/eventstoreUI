@@ -391,7 +391,8 @@ export async function get_users_profile(pubkeys,callback){
     client.subscribe(event,function(message){
        
       if (message[2] == "EOSE") client.unsubscribe(message[1]);
-      else callback(message[2])
+      
+      callback(message[2])
     });      
 }
 
