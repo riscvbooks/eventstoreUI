@@ -16,15 +16,14 @@
     { bgClass: "bg-teal-100", textClass: "text-teal-800" }
   ];
   
-  let blogId = "";
-  let blogData = {
-    title: '',
-    content: '',
-    coverUrl: '',
-    labels: [],
-  };
-  let currentContent = "";
-  let user_profile;
+  export let data;
+  const { blogId, blogData, userProfile, error } = data;
+
+ 
+   
+  let currentContent = blogData?.content || "";
+  let user_profile = userProfile;
+  let loaded = false;
 
   function getBlogId() {
     const url = new URL(window.location.href);
@@ -38,24 +37,8 @@
     css.href = '/static/css/vue.css';
     document.head.appendChild(css);
 
-    blogId = getBlogId();
+    loaded = true;
 
-    if (blogId) {
-      await get_blog_id(blogId, message => {
-        if (message.code == 200) {
-          let b = JSON.parse(message.data);
-          blogData = b;
-          blogData.servertimestamp = message.servertimestamp;
-          currentContent = blogData.content;
-          
-          get_user_profile(message.user, msg => {
-            if (msg.code == 200) {
-              user_profile = JSON.parse(msg.data);
-            }
-          });
-        }
-      });
-    }
   });
 </script>
 
@@ -209,6 +192,115 @@
   border-radius: 50%;
 }
 
+  /* 隔离横条容器 */
+  .blog-divider {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 12px; /* 线条与圆点间距 */
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+  }
+
+  /* 鼠标悬停时增强显示 */
+  .blog-divider:hover {
+    opacity: 1;
+  }
+
+  /* 线条样式 - 渐变效果 */
+  .divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      rgba(79, 70, 229, 0) 0%, 
+      rgba(79, 70, 229, 0.6) 50%, 
+      rgba(79, 70, 229, 0) 100%
+    );
+    transition: all 0.5s ease;
+  }
+
+  /* 中间圆点装饰 */
+  .divider-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #4F46E5; /* 主色调圆点 */
+    position: relative;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+    transition: transform 0.3s ease;
+  }
+
+  /* 圆点呼吸效果 */
+  .divider-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: rgba(79, 70, 229, 0.2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0.6;
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.2);
+      opacity: 0.9;
+    }
+    100% {
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0.6;
+    }
+  }
+
+  /* 顶部底部横条差异化 */
+  .top-divider .divider-line {
+    background: linear-gradient(90deg, 
+      rgba(79, 70, 229, 0) 0%, 
+      rgba(79, 70, 229, 0.6) 50%, 
+      rgba(79, 70, 229, 0) 100%
+    );
+  }
+
+  .bottom-divider .divider-line {
+    background: linear-gradient(90deg, 
+      rgba(139, 92, 246, 0) 0%, 
+      rgba(139, 92, 246, 0.6) 50%, 
+      rgba(139, 92, 246, 0) 100%
+    );
+  }
+
+  .bottom-divider .divider-dot {
+    background-color: #8B5CF6; /* 底部使用辅助色 */
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+  }
+
+  .bottom-divider .divider-dot::after {
+    background-color: rgba(139, 92, 246, 0.2);
+  }
+
+  /* 响应式调整 */
+  @media (max-width: 768px) {
+    .blog-divider {
+      gap: 8px;
+    }
+    
+    .top-divider {
+      margin-bottom: 4rem;
+    }
+    
+    .bottom-divider {
+      margin-top: 4rem;
+    }
+  }
+
+
 }
 </style>
 
@@ -271,8 +363,14 @@
 
       <!-- 博客内容 -->
       <div class="bg-white rounded-xl shadow-md p-6 mb-8">
-        <div class="blog-content">
-          {#if currentContent}
+        <div class="blog-divider top-divider mb-6">
+          <div class="divider-line"></div>
+          <div class="divider-dot"></div>
+          <div class="divider-line"></div>
+        </div>
+
+        <div class="blog-content ">
+          {#if currentContent && loaded }
             <ViewMD mdcontent={currentContent} />
           {:else}
             <div class="text-center py-10 text-gray-500">
@@ -281,6 +379,12 @@
           {/if}
         </div>
       </div>
+        <div class="blog-divider top-divider mb-6">
+          <div class="divider-line"></div>
+          <div class="divider-dot"></div>
+          <div class="divider-line"></div>
+        </div>
+
     </div>
   </div>
 

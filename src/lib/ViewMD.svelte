@@ -187,13 +187,83 @@
   });
 </script>
 
-<style>
-
-
-</style>
-
-<div class="md-content">
+<div class="md-content scrollable-content">
   <article class="markdown-section" bind:this={container}>
     {@html compiledContent}
   </article>
 </div>
+
+<style>
+  /* 基础容器样式 */
+  .md-content {
+    width: 100%;
+    padding: 2rem;
+    padding-bottom: 4rem; /* 底部大留白，确保内容可见 */
+    box-sizing: border-box;
+    max-height: calc(100vh - 8rem); /* 控制最大高度（视口高度 - 预留空间） */
+    background-color: #ffffff;
+  }
+
+  /* 滚动控制 - 隐藏滚动条但保留功能 */
+  .scrollable-content {
+    overflow-y: auto; /* 启用垂直滚动 */
+    scrollbar-width: none; /* Firefox 隐藏滚动条 */
+    -ms-overflow-style: none; /* IE/Edge 隐藏滚动条 */
+  }
+
+  /* Chrome/Safari/Opera 隐藏滚动条 */
+  .scrollable-content::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Markdown内容样式 */
+  .markdown-section {
+    min-height: 100%; /* 确保内容区域高度充足 */
+    max-width: 800px; /* 限制内容最大宽度，提升可读性 */
+    margin: 0 auto; /* 居中显示 */
+    margin-bottom: 1rem; /* 内容底部额外缓冲 */
+    line-height: 1.8; /* 优化行高，提升阅读体验 */
+  }
+
+  .markdown-section p {
+    margin-bottom: 1rem;
+  }
+
+  .markdown-section img {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+  }
+
+  .markdown-section blockquote {
+    border-left: 4px solid #4f46e5;
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    background-color: #f8fafc;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .markdown-section a {
+    color: #4f46e5;
+    text-decoration: none;
+  }
+
+  .markdown-section a:hover {
+    text-decoration: underline;
+  }
+
+  /* 响应式适配 */
+  @media (max-width: 768px) {
+    .md-content {
+      max-height: calc(100vh - 8rem); /* 移动端调整高度 */
+      padding: 1rem;
+      padding-bottom: 1rem; /* 移动端底部留白 */
+    }
+
+    .markdown-section {
+      max-width: 100%; /* 移动端全屏显示 */
+      line-height: 1.7;
+    }
+  }
+</style>
+    
