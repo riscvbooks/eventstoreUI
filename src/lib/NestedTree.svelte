@@ -156,7 +156,7 @@
       <!-- 项目内容区 -->
       <div class="flex items-center p-2.5 hover:bg-gray-50 rounded-md cursor-pointer w-full transition-colors duration-200">
         <!-- 层级缩进 -->
-        <div class={`w-${level > 1 ? '8' : '0'} md:w-${level > 1 ? '10' : '0'} flex-shrink-0`}></div>
+        <div class={`w-${level > 1 ? '1' : '0'} md:w-${level > 1 ? '1' : '0'} flex-shrink-0`}></div>
         
         <!-- 图标和折叠/展开按钮 -->
         {#if item.type === 'folder'}
