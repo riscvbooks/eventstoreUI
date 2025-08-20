@@ -16,6 +16,7 @@
   let coverImageData = null;
   let blogData = { ...initialBlog };
   let isMouseInArea = false; // 控制提示框显示
+  let initialContent=null;
 
  
 
@@ -288,8 +289,10 @@
     });
   }
 
-  $: if (initialBlog) {
+  $: if (initialBlog.content && initialBlog.content !== initialContent) {
     // 使用解构复制，避免直接引用导致的响应式问题
+    
+    initialContent = initialBlog.content;
     blogData = { ...initialBlog };
     if (simplemde){
       simplemde.value(blogData.content);
