@@ -126,7 +126,6 @@
     })
 
 
-
 </script>
 
 <style>
@@ -578,6 +577,34 @@
   }
 }
 
+    /* link */
+    .outline1-links {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* 确保链接结构清晰 */
+    .outline1-links-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .outline1-links-list li {
+      margin: 0.5rem 0;
+    }
+
+    .outline1-links-list a {
+      color: #000;
+      text-decoration: none;
+    }
+
 }
 
 </style>
@@ -585,7 +612,56 @@
 <!-- 页面主容器 -->
 <div class="book-view-container">
   <!-- 加载状态 -->
- 
+      <div class="outline1-links" aria-hidden="true">
+        <h2>{bookTitle} 章节链接</h2>
+        <!-- 使用 Svelte 模板递归渲染链接 -->
+        {#if initialOutline.length > 0}
+          <ul class="outline1-links-list">
+            {#each initialOutline as item}
+              <li key={item.id}>
+                <!-- 直接使用 item 的 href 和 title 生成链接（推荐） -->
+                {#if item.type === 'chapter' && item.id}
+                  <a href="/viewbooks/{bookId}/{item.id}.md">{item.title}</a>
+                {:else}
+                  <!-- 文件夹显示标题但无链接 -->
+                  <span>{item.title}</span>
+                {/if}
+                
+                <!-- 递归渲染子项 -->
+                {#if item.children && item.children.length > 0}
+                  <ul class="outline1-links-list">
+                    {#each item.children as child}
+                      <li key={child.id}>
+                        {#if child.type === 'chapter' && child.id}
+                          <a href="/viewbooks/{bookId}/{child.id}.md">{child.title}</a>
+                        {:else}
+                          <span>{child.title}</span>
+                        {/if}
+                        
+                        <!-- 深层子项继续递归 -->
+                        {#if child.children && child.children.length > 0}
+                          <ul class="outline1-links-list">
+                            {#each child.children as grandchild}
+                              <li key={grandchild.id}>
+                                {#if grandchild.type === 'chapter' && grandchild.id}
+                                  <a href="/viewbooks/{bookId}/{grandchild.id}.md">{grandchild.title}</a>
+                                {:else}
+                                  <span>{grandchild.title}</span>
+                                {/if}
+                              </li>
+                            {/each}
+                          </ul>
+                        {/if}
+                      </li>
+                    {/each}
+                  </ul>
+                {/if}
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+
     <!-- 左侧边栏 - 书籍信息和大纲 -->
     <aside class="book-sidebar">
         <!-- 书籍信息 -->

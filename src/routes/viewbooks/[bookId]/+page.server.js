@@ -43,6 +43,27 @@ function findFirstChapterNode(items) {
   return null;
 }
 
+function addLinkToItems(items, bookId) {
+    return items.map(item => {
+      // 复制原对象（避免直接修改源数据）
+      const newItem = { ...item };
+      
+      // 仅为章节添加链接（文件夹可能不需要）
+      if (newItem.type === 'chapter' && newItem.id) {
+        // 生成链接（使用模板字符串拼接bookId和章节id）
+        newItem.link = `/viewbooks/${bookId}/${newItem.id}.md`;
+      }
+      
+      // 递归处理子项
+      if (newItem.children && newItem.children.length > 0) {
+        newItem.children = addLinkToItems(newItem.children, bookId);
+      }
+      
+      return newItem;
+    });
+  }
+  
+
 export async function load({ params }) {
   try {
     const { bookId } = params;
@@ -57,6 +78,7 @@ export async function load({ params }) {
     let initialOutline = [];
     if (outlineData?.data) {
       initialOutline = JSON.parse(outlineData.data);
+      initialOutline = addLinkToItems(initialOutline, bookId);
     }
 
     // 3. 获取第一个章节内容
