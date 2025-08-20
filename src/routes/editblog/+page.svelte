@@ -118,6 +118,7 @@
                     return ;
                 }
                 let b = JSON.parse(message.data);
+                
                 blogData = b;
                  
             }

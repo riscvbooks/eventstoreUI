@@ -10,13 +10,22 @@
   height: calc(100vh - 10rem);
 }
 
+/* 修改 .left-seamless 的溢出行为 */
 .left-seamless {
   width: 100%;
   border-right: 1px solid #E5E7EB;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 0.5rem; /* 减小内边距 */
+  padding: 0.5rem;
+}
+
+/* 确保大纲区域（带 .custom-scroll 类的元素）可滚动 */
+.left-seamless .custom-scroll {
+  flex-grow: 1; /* 让大纲区域占满剩余空间 */
+  overflow-y: auto; /* 内容溢出时显示垂直滚动条 */
+  overflow-x: hidden; /* 禁止水平滚动 */
+  /* 可选：添加滚动条美化 */
+  scrollbar-width: thin;
 }
 
 .right-seamless {

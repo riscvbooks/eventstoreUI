@@ -955,7 +955,7 @@
 
 <style>
   :global {
- 
+    
   }
 </style>
 
@@ -970,7 +970,7 @@
     <div class="left-seamless flex flex-col">
       <!-- 书籍封面 -->
       <!-- 书籍信息区域（修改后） -->
-      <div class="p-5 border-b border-gray-200">
+      <div class="p-5 border-b border-gray-200 overflow-y-auto ">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-xl font-semibold text-primary flex items-center" on:click={togglecover}>
             <i class="fa fa-image mr-2"></i>书籍信息
