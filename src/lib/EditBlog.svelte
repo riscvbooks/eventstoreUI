@@ -296,8 +296,17 @@
     blogData = { ...initialBlog };
     if (simplemde){
       simplemde.value(blogData.content);
+      setTimeout(() => {
+        if (simplemde?.codemirror) {
+          // 触发CodeMirror重绘
+          simplemde.codemirror.refresh();
+          // 手动调整高度（确保内容完全显示）
+          const contentHeight = simplemde.codemirror.getScrollInfo().height;
+          simplemde.codemirror.setSize(null, contentHeight);
+        }
+    }, 300);
     }
-     
+    
   }
 
   // 优化图片显示的响应式逻辑
