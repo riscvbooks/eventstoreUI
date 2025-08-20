@@ -2,13 +2,30 @@
   import { onMount } from 'svelte';
   import ViewNestedTree from '$lib/ViewNestedTree.svelte';
   import "$lib/editbook.css";
-  import { page } from '$app/stores';
-
+ 
 
   import ViewMD from '$lib/ViewMD.svelte';
 
-  // 从page.params中提取bookId
-  const bookId = $page.params.bookId;
+ 
+
+  export let data;
+  // 从数据中解构需要的字段（带默认值，避免 undefined 错误）
+  const { 
+    bookId, 
+    bookInfo = {}, 
+    initialOutline = [], 
+    firstChapter = {}, 
+    error 
+  } = data;
+
+  // 页面状态初始化（基于预取数据）
+  let currentChapterContent = firstChapter.content || "";
+  let globalClickId = firstChapter.id || null;
+  let bookAuthor = bookInfo.author || "";
+  let bookTitle = bookInfo.title || "";
+  let coverImgurl = bookInfo.coverImgurl || "";
+
+  let loaded = false;
 
   import {upload_file,
     create_book,
@@ -16,14 +33,7 @@
     create_chapter,
     get_book_id,
     get_chapter} from "$lib/esclient";
-  
-   let initialOutline = [];
-   let bookAuthor;
-   let bookTitle;
-   let coverImgurl;
-
-   let currentChapterContent;
-   let globalClickId;
+   
    async function handleSetClickId(item) {
     globalClickId = item.id;
  
@@ -84,7 +94,7 @@
   }
 
     onMount(async () => {
-
+        loaded = true;
                     // 动态加载 CSS
         const css = document.createElement('link');
         css.rel = 'stylesheet';
@@ -94,7 +104,7 @@
         // 动态加载 JS
 
 
- 
+      /*
         await get_chapter(bookId,"outline.md",async function(message){
             if (message != "EOSE"){
                 
@@ -111,7 +121,7 @@
             bookTitle = message.data.title;
             coverImgurl = message.data.coverImgurl;
             }
-        });
+        }); */
 
     })
 
@@ -631,7 +641,7 @@
     
     <!-- 右侧内容区 - Markdown内容 -->
     <main class="book-content">
-      {#if currentChapterContent}
+      {#if currentChapterContent && loaded}
         <ViewMD mdcontent={currentChapterContent} />
       {:else if initialOutline.length > 0}
         <div class="no-selection">
