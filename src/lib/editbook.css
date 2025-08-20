@@ -47,7 +47,7 @@
   position: relative;
   overflow: visible;
   font-size: 0.875rem; /* 减小字体 */
-  line-height: 0.8; /* 紧凑行高 */
+  
 }
 
 .outline-item:hover {
