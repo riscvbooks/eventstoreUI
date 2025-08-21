@@ -163,6 +163,7 @@
       }
     }
    hljs.highlightAll();
+   setTimeout(() => { hljs.highlightAll(); },1000);
   });
 
   // ---------------- mdcontent 变化时重新编译 ----------------
