@@ -38,6 +38,7 @@
     // 配置 Docsify 自定义渲染器
     window.$docsify = {
       notFoundPage: false,
+      hideSidebar: true,
       markdown: {
         renderer: {
           code: (code: string, lang: string) => codeBlockRenderer(code, lang)
@@ -163,8 +164,8 @@
       }
     }
    hljs.highlightAll();
-   setTimeout(() => { hljs.highlightAll(); },2000);
-   setTimeout(() => { hljs.highlightAll(); },5000);
+   setTimeout(() => { hljs.highlightAll(); },1000);
+  
   });
 
   // ---------------- mdcontent 变化时重新编译 ----------------
@@ -192,9 +193,13 @@
 </script>
 
 <div class="md-content scrollable-content">
+  <div class="hidden"> <!-- docsify 会改写这部分，给他一个隐藏的地方让他设置改写-->
+   <div id="app"> <article class="markdown-section  "></article></div>
+  </div>
   <article class="markdown-section" bind:this={container}>
     {@html compiledContent}
   </article>
+
 </div>
 
 <style>
