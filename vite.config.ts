@@ -15,7 +15,7 @@ export default defineConfig({
 				dest: 'static/css',  // 复制到 dist/static/css/vue.css
 			  },
 			  {
-				src: 'node_modules/docsify/lib/docsify.min.js',
+				src: 'node_modules/docsify/lib/docsify.js',
 				dest: 'static/js',   // 复制到 dist/static/js/docsify.min.js
 			  }]
 		   })

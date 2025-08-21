@@ -26,7 +26,7 @@
     // 动态加载 Mermaid
     await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js');
     // 动态加载 Docsify
-    await loadScript('/static/js/docsify.min.js');
+    await loadScript('/static/js/docsify.js');
 
     // 初始化 Mermaid
     window.mermaid.initialize({
@@ -193,9 +193,7 @@
 </script>
 
 <div class="md-content scrollable-content">
-  <div class="hidden"> <!-- docsify 会改写这部分，给他一个隐藏的地方让他设置改写-->
-   <div id="app"> <article class="markdown-section  "></article></div>
-  </div>
+  <div class="hidden">  <article class="markdown-section"></article></div>
   <article class="markdown-section" bind:this={container}>
     {@html compiledContent}
   </article>
