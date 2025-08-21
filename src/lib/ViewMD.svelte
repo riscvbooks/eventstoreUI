@@ -6,6 +6,7 @@
   let compiledContent: string = '';
   let container: HTMLElement;
 
+ 
   // TOC 配置
   const tocMaxLevel = 3;
   let tocList: any[] = [];
@@ -51,6 +52,7 @@
       const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
       return `<div id="${id}" class="mermaid">${code}</div>`; // 先插入代码
     } else {
+       
       return `<pre><code class="language-${lang}">${code}</code></pre>`;
     }
   }
@@ -160,6 +162,7 @@
         }
       }
     }
+   hljs.highlightAll();
   });
 
   // ---------------- mdcontent 变化时重新编译 ----------------
@@ -167,15 +170,14 @@
         let precontent = processMarkdownImages(mdcontent);
 
         if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
-             
+           
             compiledContent = window.__current_docsify_compiler__.compile(precontent);
              
         } else {
             
             setTimeout(() => {
-                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
+                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {          
                     compiledContent = window.__current_docsify_compiler__.compile(precontent);
-                    
                 } else {
                     console.warn('Docsify 编译器仍未加载完成');
                 }
