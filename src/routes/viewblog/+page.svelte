@@ -32,10 +32,7 @@
 
   onMount(async () => {
     // 加载样式和脚本
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = '/static/css/vue.css';
-    document.head.appendChild(css);
+
 
     loaded = true;
 

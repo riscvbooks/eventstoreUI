@@ -27,6 +27,11 @@
     await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js');
     // 动态加载 Docsify
     await loadScript('/static/js/docsify.js');
+    
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = '/static/css/vue.css';
+    document.head.appendChild(css);
 
     // 初始化 Mermaid
     window.mermaid.initialize({

@@ -95,12 +95,7 @@
 
     onMount(async () => {
         loaded = true;
-                    // 动态加载 CSS
-        const css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = '/static/css/vue.css';
-        document.head.appendChild(css);
-
+ 
         // 动态加载 JS
 
 
