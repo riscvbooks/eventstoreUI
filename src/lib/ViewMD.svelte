@@ -42,7 +42,8 @@
       markdown: {
         renderer: {
           code: (code: string, lang: string) => codeBlockRenderer(code, lang)
-        }
+        },
+ 
       }
     };
   }
@@ -172,22 +173,33 @@
     $: if (mdcontent) {
         let precontent = processMarkdownImages(mdcontent);
 
-        if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
-           
-            compiledContent = window.__current_docsify_compiler__.compile(precontent);
-             
-        } else {
-            
-            setTimeout(() => {
-                if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {          
-                    compiledContent = window.__current_docsify_compiler__.compile(precontent);
-                } else {
-                    console.warn('Docsify 编译器仍未加载完成');
-                }
-            }, 1000);
+        function checkCompiler() {
+            // 检查编译器是否准备就绪
+            if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
+                // 编译器就绪，执行编译
+                compiledContent = window.__current_docsify_compiler__.compile(precontent);
+                console.log('编译器已就绪，编译完成');
+                // 这里可以添加编译完成后的后续操作
+            } else {
+                // 编译器未就绪，继续轮询（100ms 间隔，可根据需求调整）
+                console.log('编译器未就绪，继续等待...');
+                setTimeout(checkCompiler, 1000); // 递归调用自身，形成循环
+            }
         }
+
+        // 启动第一次检查
+        checkCompiler();
     }
   onMount(async () => {
+
+    window.addEventListener('error', function(event) {
+        const errorMsg = event.error?.message || '';
+        
+        if (errorMsg.includes('addEventListener')) {
+           setTimeout(() => { hljs.highlightAll(); },1000);
+        }
+    }, true);
+
     await loadDocsifyAndMermaid();
   });
 </script>
