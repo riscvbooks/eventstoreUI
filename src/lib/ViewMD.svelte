@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { onMount, afterUpdate } from 'svelte';
-  import { processMarkdownImages, codeCopy } from '$lib/docsify_plugin';
+  import { onMount  } from 'svelte';
+  import { processMarkdownImages } from '$lib/docsify_plugin';
+  import 'markview/src/styles/main.css';
 
-  export let mdcontent: string;
-  let compiledContent: string = '';
+
+  let renderMarkdown; 
+
+  const { mdcontent } = $props<{ mdcontent: string }>();
+  let compiledContent = $state('');
   let container: HTMLElement;
 
  
@@ -22,16 +26,11 @@
     });
   }
 
-  async function loadDocsifyAndMermaid() {
+  async function loadMermaidAndCSS() {
     // 动态加载 Mermaid
     await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js');
     // 动态加载 Docsify
-    await loadScript('/static/js/docsify.js');
-    
-    const css = document.createElement('link');
-    css.rel = 'stylesheet';
-    css.href = '/static/css/vue.css';
-    document.head.appendChild(css);
+ 
 
     // 初始化 Mermaid
     window.mermaid.initialize({
@@ -40,29 +39,31 @@
       securityLevel: 'loose'
     });
 
-    // 配置 Docsify 自定义渲染器
-    window.$docsify = {
-      notFoundPage: false,
-      hideSidebar: true,
-      markdown: {
-        renderer: {
-          code: (code: string, lang: string) => codeBlockRenderer(code, lang)
-        },
- 
+
+    const styles = [
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/base.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/vars.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/fonts.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/icons.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/utils.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/custom-block.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-code.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-doc.css",
+      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-table.css"
+    ];
+
+    styles.forEach(href => {
+      if (!document.querySelector(`link[href="${href}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        document.head.appendChild(link);
       }
-    };
+    });
+ 
   }
 
-  // ---------------- Markdown 代码块渲染 ----------------
-  function codeBlockRenderer(code: string, lang: string) {
-    if (lang === 'mermaid') {
-      const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      return `<div id="${id}" class="mermaid">${code}</div>`; // 先插入代码
-    } else {
-       
-      return `<pre><code class="language-${lang}">${code}</code></pre>`;
-    }
-  }
+ 
 
   // ---------------- TOC 生成函数 ----------------
     function generateToC(level: number, text: string, id: string) {
@@ -138,12 +139,11 @@
   }
 
   // ---------------- afterUpdate 渲染 Mermaid + TOC ----------------
-  afterUpdate(async () => {
-    if (!container) return;
 
-    // 1️⃣ 代码复制
-    codeCopy();
+  $effect(async () => {
+    if (!container || !compiledContent) return;
 
+    console.log("md change");
     // 2️⃣ TOC
     const tocResult = extractHeadingsAndContent();
     const tocContainer = document.getElementById('right-toc');
@@ -164,56 +164,53 @@
         try {
           const obj = await window.mermaid.render(`mermaid-svg-${id}`, code);
           block.innerHTML = obj.svg;
-        } catch(err) {
+        } catch (err) {
           console.error(`Mermaid render error for ${id}:`, err);
         }
       }
     }
-   hljs.highlightAll();
-   setTimeout(() => { hljs.highlightAll(); },1000);
-  
+
   });
 
-  // ---------------- mdcontent 变化时重新编译 ----------------
-    $: if (mdcontent) {
-        let precontent = processMarkdownImages(mdcontent);
-
-        function checkCompiler() {
-            // 检查编译器是否准备就绪
-            if (window.__current_docsify_compiler__ && window.__current_docsify_compiler__.compile) {
-                // 编译器就绪，执行编译
-                compiledContent = window.__current_docsify_compiler__.compile(precontent);
-                console.log('编译器已就绪，编译完成');
-                // 这里可以添加编译完成后的后续操作
-            } else {
-                // 编译器未就绪，继续轮询（100ms 间隔，可根据需求调整）
-                console.log('编译器未就绪，继续等待...');
-                setTimeout(checkCompiler, 1000); // 递归调用自身，形成循环
-            }
+ 
+  $effect(() => {
+    if (!mdcontent) return;
+     
+    let precontent = processMarkdownImages(mdcontent);
+    function checkrenderMarkdown()
+    {
+        if (renderMarkdown){
+           compiledContent = renderMarkdown(precontent)
+           console.log("编译完成")
         }
-
-        // 启动第一次检查
-        checkCompiler();
+        else {
+          setTimeout(checkrenderMarkdown, 1000);
+        }
+         
     }
+    checkrenderMarkdown()
+
+   
+     
+ 
+  });
+
   onMount(async () => {
+    
+    const module = await import('markview/src/utils/markdown.js');
+    renderMarkdown = await module.createMarkdownRenderer("auto");
 
-    window.addEventListener('error', function(event) {
-        const errorMsg = event.error?.message || '';
-        
-        if (errorMsg.includes('addEventListener')) {
-           setTimeout(() => { hljs.highlightAll(); },1000);
-        }
-    }, true);
+ 
 
-    await loadDocsifyAndMermaid();
+    await loadMermaidAndCSS();
   });
 </script>
 
 <div class="md-content scrollable-content">
-  <div class="hidden">  <article class="markdown-section"></article></div>
-  <article class="markdown-section" bind:this={container}>
+   
+  <div class="vp-doc" bind:this={container}>
     {@html compiledContent}
-  </article>
+  </div>
 
 </div>
 
@@ -240,41 +237,7 @@
     display: none;
   }
 
-  /* Markdown内容样式 */
-  .markdown-section {
-    min-height: 100%; /* 确保内容区域高度充足 */
-    max-width: 800px; /* 限制内容最大宽度，提升可读性 */
-    margin: 0 auto; /* 居中显示 */
-    margin-bottom: 1rem; /* 内容底部额外缓冲 */
-    line-height: 1.8; /* 优化行高，提升阅读体验 */
-  }
-
-  .markdown-section p {
-    margin-bottom: 1rem;
-  }
-
-  .markdown-section img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 1.5rem 0;
-  }
-
-  .markdown-section blockquote {
-    border-left: 4px solid #4f46e5;
-    padding: 1rem 1.5rem;
-    margin: 1.5rem 0;
-    background-color: #f8fafc;
-    border-radius: 0 6px 6px 0;
-  }
-
-  .markdown-section a {
-    color: #4f46e5;
-    text-decoration: none;
-  }
-
-  .markdown-section a:hover {
-    text-decoration: underline;
-  }
+ 
 
   /* 响应式适配 */
   @media (max-width: 768px) {
@@ -284,10 +247,10 @@
       padding-bottom: 1rem; /* 移动端底部留白 */
     }
 
-    .markdown-section {
-      max-width: 100%; /* 移动端全屏显示 */
-      line-height: 1.7;
-    }
+ 
   }
+
+
+ 
 </style>
     
