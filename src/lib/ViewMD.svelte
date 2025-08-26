@@ -2,6 +2,18 @@
   import { onMount  } from 'svelte';
   import { processMarkdownImages } from '$lib/docsify_plugin';
   import 'markview/src/styles/main.css';
+    // 直接通过 import 引入 CSS 文件，无需 <link> 标签
+  import '$lib/vitepress-assets/styles/base.css';
+  import '$lib/vitepress-assets/styles/vars.css';
+  import '$lib/vitepress-assets/styles/fonts.css';
+  import '$lib/vitepress-assets/styles/icons.css';
+  import '$lib/vitepress-assets/styles/utils.css';
+  // 引入 components 目录下的 CSS
+  import '$lib/vitepress-assets/styles/components/custom-block.css';
+  import '$lib/vitepress-assets/styles/components/vp-code.css';
+  import '$lib/vitepress-assets/styles/components/vp-doc.css';
+  import '$lib/vitepress-assets/styles/components/vp-code-group.css';
+  import '$lib/vitepress-assets/styles/components/vp-sponsor.css';
 
 
   let renderMarkdown; 
@@ -39,27 +51,6 @@
       securityLevel: 'loose'
     });
 
-
-    const styles = [
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/base.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/vars.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/fonts.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/icons.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/utils.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/custom-block.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-code.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-doc.css",
-      "https://cdn.jsdelivr.net/npm/vitepress@1.6.4/dist/client/theme-default/styles/components/vp-table.css"
-    ];
-
-    styles.forEach(href => {
-      if (!document.querySelector(`link[href="${href}"]`)) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.href = href;
-        document.head.appendChild(link);
-      }
-    });
  
   }
 
@@ -143,7 +134,7 @@
   $effect(async () => {
     if (!container || !compiledContent) return;
 
-    console.log("md change");
+   
     // 2️⃣ TOC
     const tocResult = extractHeadingsAndContent();
     const tocContainer = document.getElementById('right-toc');
@@ -181,7 +172,7 @@
     {
         if (renderMarkdown){
            compiledContent = renderMarkdown(precontent)
-           console.log("编译完成")
+            
         }
         else {
           setTimeout(checkrenderMarkdown, 1000);
@@ -205,6 +196,9 @@
     await loadMermaidAndCSS();
   });
 </script>
+
+ 
+
 
 <div class="md-content scrollable-content">
    
