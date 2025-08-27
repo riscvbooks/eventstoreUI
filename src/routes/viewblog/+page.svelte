@@ -55,7 +55,7 @@
     color: #1e293b;
     font-size: 1.5rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #e2e8f0;
+    
   }
   
   .blog-content blockquote {

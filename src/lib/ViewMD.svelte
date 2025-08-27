@@ -40,7 +40,7 @@
 
   async function loadMermaidAndCSS() {
     // 动态加载 Mermaid
-    await loadScript('https://cdn.jsdelivr.net/npm/mermaid@11.9.0/dist/mermaid.min.js');
+    await loadScript('https://cdn.jsdmirror.com/npm/mermaid@11.9.0/dist/mermaid.min.js');
     // 动态加载 Docsify
  
 
