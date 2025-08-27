@@ -191,7 +191,10 @@
     const module = await import('markview/src/utils/markdown.js');
     renderMarkdown = await module.createMarkdownRenderer("auto");
 
- 
+    if (mdcontent){
+       let precontent = processMarkdownImages(mdcontent);
+       compiledContent = renderMarkdown(precontent);
+    }
 
     await loadMermaidAndCSS();
   });
