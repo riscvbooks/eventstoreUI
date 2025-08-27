@@ -184,14 +184,14 @@
         <div class="flex justify-between items-center h-16">
           <!-- Logo -->
           <div class="flex items-center">
-            <a href="#" class="flex items-center">
+            <a href="https://docs.chenlongos.cn" class="flex items-center">
               <span class="logo-title ">辰龙文档中心</span>
             </a>
           </div>
 
           <!-- 导航链接 - 桌面版 -->
           <nav class="hidden md:flex space-x-8">
-            <a href="#home" class="text-gray-300 hover:text-white font-medium transition-colors duration-200">首页</a>
+            <a href="https://docs.chenlongos.cn" class="text-gray-300 hover:text-white font-medium transition-colors duration-200">首页</a>
             <a href="#books" class="text-gray-300 hover:text-white font-medium transition-colors duration-200">技术书籍</a>
             <a href="#blogs" class="text-gray-300 hover:text-white font-medium transition-colors duration-200">博客文章</a>
  
@@ -683,12 +683,12 @@
               <span class="text-gray-400">asmcos@akae.cn</span>
             </li>
             <li class="flex items-start">
-              <i class="fa fa-github mt-1 mr-3 text-gray-400"></i>
+              <i class="fab fa-github mt-1 mr-3 text-gray-400"></i>
               <span class="text-gray-400">https://github.com/chenlongos</span>
             </li>
             <li class="flex items-start">
               <i class="fa fa-globe mt-1 mr-3 text-gray-400"></i>
-              <span class="text-gray-400">docs.chenlongos.cn</span>
+              <span class="text-gray-400">https://docs.chenlongos.cn</span>
             </li>
           </ul>
         </div>
