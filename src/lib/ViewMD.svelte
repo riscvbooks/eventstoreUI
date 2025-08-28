@@ -157,6 +157,7 @@
           block.innerHTML = obj.svg;
         } catch (err) {
           console.error(`Mermaid render error for ${id}:`, err);
+          document.getElementById(`mermaid-svg-${id}`)?.remove();
         }
       }
     }
