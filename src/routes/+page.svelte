@@ -371,6 +371,7 @@
               </div>
               <div class="p-5">
                 <h3 class="font-semibold text-lg mb-3">{book.data.title}</h3>
+                <a href="/viewbooks/{book.id}"></a>
                 <div class="flex flex-wrap gap-2 mb-4">
                   {#each book.labels as label}
                     <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">

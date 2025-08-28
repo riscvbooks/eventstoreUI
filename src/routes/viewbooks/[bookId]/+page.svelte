@@ -612,6 +612,9 @@
 }
 
 </style>
+<svelte:head>
+  <title>{bookTitle}</title>
+</svelte:head>
 
 <!-- 页面主容器 -->
 <div class="book-view-container">
