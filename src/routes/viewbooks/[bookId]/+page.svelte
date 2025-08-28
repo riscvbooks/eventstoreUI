@@ -505,6 +505,15 @@
   scrollbar-width: thin; /* 细滚动条（Firefox） */
 }
 
+.book-content blockquote {
+    border-left: 4px solid #4f46e5;
+    padding: 1rem 1.5rem;
+    background-color: #f8fafc;
+    margin: 2rem 0;
+    font-style: italic;
+    border-radius: 0 6px 6px 0;
+  }
+
 /* 美化滚动条（可选，适配 Chrome/Safari） */
 .book-sidebar::-webkit-scrollbar,
 .right-toc-container::-webkit-scrollbar,
