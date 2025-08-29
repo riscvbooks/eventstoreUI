@@ -154,37 +154,15 @@
 
 /* 书籍信息卡片样式 */
 .book-meta {
-    background: rgba(255, 255, 255, 0.9); /* 提高透明度，减少紫色透出 */
-    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95); /* 更高透明度，几乎完全遮挡紫色背景 */
+    border-radius: 16px; /* 顶部圆弧核心 */
     box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.8); /* 增强边框不透明度 */
+    border: 1px solid rgba(255, 255, 255, 0.9); /* 更实的边框，进一步隔离背景 */
     backdrop-filter: blur(12px);
     margin-bottom: 2rem;
     position: relative;
-    padding: 0.8rem 1.2rem; /* 增加内边距，避免内容贴边 */
-    overflow: hidden; /* 保留圆角效果 */
-}
-
-/* 检查内部子元素是否有溢出 */
-.book-meta span {
-    display: inline-block;
-    margin: 0.3rem 0; /* 避免垂直方向溢出 */
-    position: relative;
-    z-index: 1; /* 确保内容在背景之上 */
-}
-
-.book-meta::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px; /* 高度减少，视觉更纤细 */
-  background: linear-gradient(90deg, 
-    rgba(79, 70, 229, 0.4),  /* 降低蓝色透明度 */
-    rgba(139, 92, 246, 0.4)  /* 降低紫色透明度 */
-  );
-  z-index: -1;
+    padding: 0.8rem 1.2rem; /* 内边距确保内容不贴边，避免超出圆角 */
+    border-top: 2px solid rgba(102, 16, 242, 0.5); /* 柔和的靛蓝色 */
 }
 
 /* 书籍标题与作者样式 */
