@@ -665,7 +665,7 @@
       </div>
 
       <div class="book-meta">
-        <div class="p-5">
+        <div class="py-5 px-2">
           <h1 class="book-title text-xl font-bold text-gray-800 mb-1 line-clamp-2">
             《{bookTitle}》
           </h1>

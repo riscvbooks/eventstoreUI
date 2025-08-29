@@ -216,7 +216,7 @@
   /* 基础容器样式 */
   .md-content {
     width: 100%;
-    padding: 2rem;
+    padding: 1.5rem;
     padding-bottom: 4rem; /* 底部大留白，确保内容可见 */
     box-sizing: border-box;
     max-height: calc(100vh - 8rem); /* 控制最大高度（视口高度 - 预留空间） */
@@ -241,7 +241,7 @@
   @media (max-width: 768px) {
     .md-content {
       max-height: calc(100vh - 8rem); /* 移动端调整高度 */
-      padding: 1rem;
+      padding: 0.5rem;
       padding-bottom: 1rem; /* 移动端底部留白 */
     }
 

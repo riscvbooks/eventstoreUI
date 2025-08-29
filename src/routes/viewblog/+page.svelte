@@ -309,7 +309,7 @@
 <div class="main-container">
   <!-- 左侧博客内容区域 -->
   <div class="blog-content-container">
-    <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="container mx-auto  py-8 max-w-4xl">
       <!-- 标题区域 -->
       <div class="flex flex-col md:flex-row items-start gap-6 mb-8">
         <div class="w-full md:w-auto flex-shrink-0">
@@ -359,7 +359,7 @@
       {/if}
 
       <!-- 博客内容 -->
-      <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+      <div class="bg-white rounded-xl shadow-md py-6 px-1  mb-8">
         <div class="blog-divider top-divider mb-6">
           <div class="divider-line"></div>
           <div class="divider-dot"></div>
