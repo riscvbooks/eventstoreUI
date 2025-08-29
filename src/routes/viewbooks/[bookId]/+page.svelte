@@ -154,15 +154,23 @@
 
 /* 书籍信息卡片样式 */
 .book-meta {
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 
-              0 5px 10px -5px rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(12px);
-  margin-bottom: 2rem;
-  position: relative; /* 用于伪元素定位 */
+    background: rgba(255, 255, 255, 0.9); /* 提高透明度，减少紫色透出 */
+    border-radius: 16px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.8); /* 增强边框不透明度 */
+    backdrop-filter: blur(12px);
+    margin-bottom: 2rem;
+    position: relative;
+    padding: 0.8rem 1.2rem; /* 增加内边距，避免内容贴边 */
+    overflow: hidden; /* 保留圆角效果 */
+}
+
+/* 检查内部子元素是否有溢出 */
+.book-meta span {
+    display: inline-block;
+    margin: 0.3rem 0; /* 避免垂直方向溢出 */
+    position: relative;
+    z-index: 1; /* 确保内容在背景之上 */
 }
 
 .book-meta::before {
