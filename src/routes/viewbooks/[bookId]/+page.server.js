@@ -6,7 +6,7 @@ let md;
 function getBookIdPromise(bookId) {
   return new Promise((resolve, reject) => {
     get_book_id(bookId, (message) => {
-      console.log(bookId,message)
+      
       if (message === "EOSE") {
         reject(new Error("未找到书籍信息"));
       } else if (message) {
