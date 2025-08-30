@@ -58,15 +58,13 @@
       return value; // 如果不存在会返回null
   }
 
-  function handleChapterSelect(item) {
+  async function handleChapterSelect(item) {
     console.log('选中章节:', item);
+    const response = await fetch(`/viewbooks/${bookId}/${item.id}.md`);
+    let text = await response.text();
      
-    get_chapter(bookId,item.id,(message) =>{
-        if (message != "EOSE"){  
-            currentChapterContent = message.data;
-
-        }
-    })
+    currentChapterContent = text;
+ 
   }
 
  function findFirstChapterNode(items) {
@@ -98,25 +96,6 @@
  
         // 动态加载 JS
 
-
-      /*
-        await get_chapter(bookId,"outline.md",async function(message){
-            if (message != "EOSE"){
-                
-                initialOutline = JSON.parse(message.data)
-                let firstChapter = findFirstChapterNode(initialOutline)
-                if (firstChapter) await loadChapterContent(firstChapter.id)
-            }
-        });
-
-        await get_book_id(bookId, (message) => {
-            if (message != "EOSE"){
-            
-            bookAuthor = message.data.author;
-            bookTitle = message.data.title;
-            coverImgurl = message.data.coverImgurl;
-            }
-        }); */
 
     })
 

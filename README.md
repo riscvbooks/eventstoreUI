@@ -1,6 +1,6 @@
 # eventstoreUI
 
-eventstoreUI 是为辰龙社区文档中心（https://docs.chenlongos.cn）开发的前端程序，是一个开源项目。它依赖 [eventstore](https://github.com/asmcos/eventstore) 作为后端服务，提供文档管理、展示等功能，其中 Markdown 页面通过 docsify 实现单页面渲染。
+eventstoreUI 是为辰龙社区文档中心（https://docs.chenlongos.cn）开发的前端程序，是一个开源项目。它依赖 [eventstore](https://github.com/asmcos/eventstore) 作为后端服务，提供文档管理、展示等功能，其中 Markdown 页面通过 vitepress的 渲染功能后台 实现单页面渲染。
 
 ## 功能介绍
 
@@ -73,7 +73,7 @@ npm run build
 - 构建工具：Vite
 - 样式框架：Tailwind CSS
 - 类型检查：TypeScript
-- Markdown 处理：marked + docsify
+- Markdown 处理：vitepress 后台渲染
 - 实时通信：WebSocket
 - 工具库：eventstore-tools（用于与后端交互）
 - 存储管理：WebStorage（本地存储封装）

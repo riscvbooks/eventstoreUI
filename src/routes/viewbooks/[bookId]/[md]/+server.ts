@@ -1,14 +1,10 @@
 import type { RequestHandler } from './$types';
 import { get_chapter } from '$lib/esclient';
-import { marked } from 'marked';
+ 
+import {createRenderer} from "$lib/render";
 
-// 配置Markdown解析器
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  sanitize: false // 生产环境建议开启或使用DOMPurify
-});
-
+let mdrender;
+ 
 // 将get_chapter回调API转换为Promise
 const getChapterContent = (bookId: string, chapterId: string): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -17,12 +13,14 @@ const getChapterContent = (bookId: string, chapterId: string): Promise<string> =
       reject(new Error('获取章节内容超时'));
     }, 5000);
 
-    get_chapter(bookId, chapterId, (message) => {
+    get_chapter(bookId, chapterId, async (message) => {
       clearTimeout(timer); // 清除超时计时器
       
       if (message === "EOSE") {
         resolve(""); // 结束信号，返回空内容
       } else if (message?.data) {
+ 
+        message.data = await mdrender.render(message.data);
         resolve(message.data); // 成功获取内容
       } else {
         reject(new Error('未找到章节内容'));
@@ -52,6 +50,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
       });
     }
 
+    mdrender = await createRenderer();
     // 提取章节ID（移除.md后缀）
     const chapterId = mdfile.replace(/\.md$/, '');
     
@@ -67,13 +66,14 @@ export const GET: RequestHandler = async ({ params, url }) => {
     }
 
     // 根据格式参数返回对应内容
-    const format = url.searchParams.get('format');
+    let format = url.searchParams.get('format');
+    format = 'html';
     if (format === 'html') {
       // 修正相对路径引用
       const processedContent = content.replace(/\]\(\//g, '](./');
-      const htmlContent = marked(processedContent);
+ 
       
-      return new Response(htmlContent, {
+      return new Response(processedContent, {
         headers: { 
           'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'public, max-age=600' // 缓存10分钟

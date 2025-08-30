@@ -1,12 +1,16 @@
 import { get_book_id, get_chapter } from "$lib/esclient";
+import {createRenderer} from "$lib/render";
 
+let md;
 // 工具函数：将回调式API转换为Promise
 function getBookIdPromise(bookId) {
   return new Promise((resolve, reject) => {
     get_book_id(bookId, (message) => {
+      console.log(bookId,message)
       if (message === "EOSE") {
         reject(new Error("未找到书籍信息"));
       } else if (message) {
+         
         resolve(message);
       } else {
         reject(new Error("获取书籍信息失败"));
@@ -15,12 +19,14 @@ function getBookIdPromise(bookId) {
   });
 }
 
-function getChapterPromise(bookId, chapterId) {
+function getChapterPromise(bookId, chapterId,isMD) {
   return new Promise((resolve, reject) => {
-    get_chapter(bookId, chapterId, (message) => {
+    get_chapter(bookId, chapterId, async (message) => {
       if (message === "EOSE") {
         resolve(null); // 没有更多数据
       } else if (message) {
+         
+        if (isMD) message.data = await md.render(message.data);
         resolve(message);
       } else {
         reject(new Error(`获取章节 ${chapterId} 失败`));
@@ -67,11 +73,12 @@ function addLinkToItems(items, bookId) {
 export async function load({ params }) {
   try {
     const { bookId } = params;
-    
+
+    md = await createRenderer();
     // 1. 并行预取书籍基本信息和大纲
     const [bookInfo, outlineData] = await Promise.all([
       getBookIdPromise(bookId),
-      getChapterPromise(bookId, "outline.md")
+      getChapterPromise(bookId, "outline.md",false)
     ]);
 
     // 2. 解析大纲
@@ -85,7 +92,7 @@ export async function load({ params }) {
     let firstChapterContent = null;
     const firstChapter = findFirstChapterNode(initialOutline);
     if (firstChapter) {
-      const chapterData = await getChapterPromise(bookId, firstChapter.id);
+      const chapterData = await getChapterPromise(bookId, firstChapter.id,true);
       firstChapterContent = chapterData?.data || null;
     }
 

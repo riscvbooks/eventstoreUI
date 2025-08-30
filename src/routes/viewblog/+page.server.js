@@ -1,5 +1,8 @@
 import { get_blog_id, get_user_profile } from "$lib/esclient";
+import {createRenderer} from "$lib/render";
 
+
+let md;
 // 将回调式API转换为Promise
 function getBlogIdPromise(blogId) {
   return new Promise((resolve, reject) => {
@@ -42,12 +45,15 @@ export async function load({ url }) {
         error: '缺少博客ID参数'
       };
     }
-
+     
+    md = await createRenderer();
     // 1. 预取博客基本信息
     const { blogData, userPubkey, serverTimestamp } = await getBlogIdPromise(blogId);
     
     // 补充服务器时间戳
     blogData.servertimestamp = serverTimestamp;
+    
+    blogData.content = await md.render(blogData.content);
 
     // 2. 预取作者信息
     const userProfile = userPubkey ? await getUserProfilePromise(userPubkey) : null;

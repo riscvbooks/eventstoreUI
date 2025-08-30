@@ -167,35 +167,18 @@
  
   $effect(() => {
     if (!mdcontent) return;
-     
-    let precontent = processMarkdownImages(mdcontent);
-    function checkrenderMarkdown()
-    {
-        if (renderMarkdown){
-           compiledContent = renderMarkdown(precontent)
-            
-        }
-        else {
-          setTimeout(checkrenderMarkdown, 1000);
-        }
+    compiledContent = mdcontent;
          
-    }
-    checkrenderMarkdown()
-
-   
-     
  
   });
 
   onMount(async () => {
-    
+    /*
     const module = await import('markview/src/utils/markdown.js');
     renderMarkdown = await module.createMarkdownRenderer("auto");
-
-    if (mdcontent){
-       let precontent = processMarkdownImages(mdcontent);
-       compiledContent = renderMarkdown(precontent);
-    }
+    */
+    
+    if (mdcontent) compiledContent = mdcontent;
 
     await loadMermaidAndCSS();
   });
