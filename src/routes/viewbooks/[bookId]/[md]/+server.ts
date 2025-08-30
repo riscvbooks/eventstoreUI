@@ -20,7 +20,6 @@ const getChapterContent = (bookId: string, chapterId: string): Promise<string> =
         resolve(""); // 结束信号，返回空内容
       } else if (message?.data) {
  
-        message.data = await mdrender.render(message.data);
         resolve(message.data); // 成功获取内容
       } else {
         reject(new Error('未找到章节内容'));
@@ -55,8 +54,8 @@ export const GET: RequestHandler = async ({ params, url }) => {
     const chapterId = mdfile.replace(/\.md$/, '');
     
     // 获取章节内容
-    const content = await getChapterContent(bookId, chapterId);
-    
+    let content = await getChapterContent(bookId, chapterId);
+    content = await mdrender.render(content);
     // 处理空内容
     if (!content.trim()) {
       return new Response('章节内容为空', {

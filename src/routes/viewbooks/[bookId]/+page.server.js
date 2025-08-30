@@ -26,7 +26,6 @@ function getChapterPromise(bookId, chapterId,isMD) {
         resolve(null); // 没有更多数据
       } else if (message) {
          
-        if (isMD) message.data = await md.render(message.data);
         resolve(message);
       } else {
         reject(new Error(`获取章节 ${chapterId} 失败`));
@@ -93,6 +92,10 @@ export async function load({ params }) {
     const firstChapter = findFirstChapterNode(initialOutline);
     if (firstChapter) {
       const chapterData = await getChapterPromise(bookId, firstChapter.id,true);
+      if (chapterData?.data){
+        chapterData.data = await md.render(chapterData.data);
+      }
+     
       firstChapterContent = chapterData?.data || null;
     }
 
