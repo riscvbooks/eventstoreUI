@@ -28,8 +28,8 @@
  
 
   function handleSaveSuccess(blog) {
-    console.log("保存成功的博客数据：", blog);
-     
+    showNotification("博客发布成功，可以点击右侧更新。",3000,"info");
+ 
   }
   function getTagValue(tags,t) {
     const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);

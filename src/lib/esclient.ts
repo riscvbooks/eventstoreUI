@@ -425,8 +425,10 @@ export async function create_blog(blogData,pubkey,privkey,callback){
     }
   if (blogData.labels) event.labels = blogData.labels; 
 
-  console.log(event)
+  
   let sevent = secureEvent(event,privkey);
+  callback({code:201,id:blogId})
+
   client.publish(sevent,function(message){
       callback(message[2]);
   });  

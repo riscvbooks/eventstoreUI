@@ -19,6 +19,7 @@
   let initialContent=null;
 
  
+  let blogId;
 
   // DOM引用
   let uploadArea;
@@ -28,11 +29,14 @@
   function getBlogId( ) {
       let url;
       // 处理传入的URL或使用当前页面URL
-    
+      if (blogId) return blogId;
+
       url = new URL(window.location.href);
    
       let Id = url.searchParams.get('blogid');
       
+      blogId = Id;
+
       return Id; // 如果不存在会返回null
   }
 
@@ -280,6 +284,8 @@
     blogData.isPublished = isPublish;
     blogData.updatedAt = new Date().toISOString();
     create_blog(JSON.stringify(blogData), Keypub, Keypriv, (message) => {
+      if (message.code === 201 && !blogId) blogId = message.id ;
+      
       if (message.code === 200) {
         showNotification(isPublish ? "文章发布成功" : "草稿保存成功", 2000, "success");
         onSaveSuccess(blogData);
