@@ -18,5 +18,45 @@ export async function createRenderer(
     root,
     { markdown: options }
   );
+
+  md.renderer.rules.fence = function(tokens, idx, options, env, self) {
+    const token = tokens[idx]
+    const info = token.info ? md.utils.unescapeAll(token.info).trim() : ''
+    let langName = ''
+    let langAttrs = ''
+  
+    if (info) {
+      const arr = info.split(/(\s+)/g)
+      langName = arr[0]
+      langAttrs = arr.slice(2).join('')
+    }
+  
+    if (langName === 'mermaid') {
+      const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+      return `<div id="${id}" class="mermaid">${token.content}</div>`; // 先插入代码
+    }
+
+    let highlighted
+    if (options.highlight) {
+      highlighted = options.highlight(token.content, langName, langAttrs) || md.utils.escapeHtml(token.content)
+    } else {
+      highlighted = md.utils.escapeHtml(token.content)
+    }
+    return `
+    <div class="code-block">
+      <div class="code-header">         
+        <div class="code-header-left">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+        </div>
+        <span>${langName}</span>
+        <button class="copy-btn" onclick="copyCode(this)">复制</button>
+      </div>
+      ${highlighted}
+    </div>`;
+    
+  };
+
   return md;
 }

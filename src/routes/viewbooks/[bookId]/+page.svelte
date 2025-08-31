@@ -162,6 +162,24 @@
       margin: 0 0 1rem 0;
     }
 
+    .author-dot {
+        width: 16px;
+        height: 16px;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+    }
+    
+    .author-dot::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        background: white;
+        border-radius: 50%;
+    }
     /* 书籍统计信息 */
     .book-stats {
       display: flex;
@@ -618,7 +636,7 @@
 
 <svelte:head>
   <title>{bookTitle}</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+ 
 </svelte:head>
 
 <!-- 页面主容器 -->
@@ -665,22 +683,45 @@
     </div>
 
     <div class="book-meta">
-      <div class="py-5 px-2">
-        <h1 class="book-title text-xl font-bold text-gray-800 mb-1 line-clamp-2">
-          《{bookTitle}》
+      <div class="py-5 px-3 relative overflow-hidden">
+        <!-- 背景装饰元素 -->
+
+        
+        <!-- 书籍标题 -->
+        <h1 class="book-title text-xl font-bold text-gray-800 mb-2 line-clamp-2 relative flex items-center gap-2">
+          <span class="text-purple-600 text-lg">《</span>
+          {bookTitle}
+          <span class="text-purple-600 text-lg">》</span>
+          <!-- 新添加：标题悬停效果 -->
+          <span class="inline-block w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 mt-1.5 rounded-0 group-hover:w-full-1/2 transition-all duration-300"></span>
         </h1>
-        <p class="book-author text-sm text-gray-600 flex items-center">
-          <span class="inline-block w-1 h-1 rounded-full bg-gray-400 mr-1.5"></span>
-          作者: {bookAuthor}
+        
+        <!-- 作者信息 -->
+        <p class="book-author text-sm text-gray-600 flex items-center gap-2 mt-1">
+          <span class="author-dot"></span>
+          <span class="text-gray-500">作者:</span>
+          <span class="font-medium text-gray-700 relative group">
+            {bookAuthor}
+            <!-- 作者动下划线效果 -->
+            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></span>
+          </span>
         </p>
         
-        <div class="mt-3 h-px bg-gradient-to-r from-blue-200 to-transparent"></div>
+        <!-- 装饰分隔线（增强化版） -->
+        <div class="mt-4 h-px bg-gradient-to-r from-purple-300 via-blue-200 to-transparent relative-0"></div>
         
+        <!-- 章节统计（带图标） -->
         {#if initialOutline.length > 0}
-          <div class="mt-3 text-xs text-gray-500">
-            共 {initialOutline.length} 个章节
+          <div class="mt-4 flex items-center gap-2 text-xs text-gray-500">
+            <span class="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+              <i class="fa fa-list-ul text-[10px]"></i>
+            </span>
+            <span>共 <span class="font-medium text-purple-600">{initialOutline.length}</span> 个章节</span>
           </div>
         {/if}
+        
+        <!-- 角落装饰 -->
+        <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-purple-100 rounded-tr"></div>
       </div>
     </div>
     

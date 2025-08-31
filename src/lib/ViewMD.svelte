@@ -162,6 +162,7 @@
       }
     }
 
+
   });
 
  
@@ -173,14 +174,29 @@
   });
 
   onMount(async () => {
-    /*
-    const module = await import('markview/src/utils/markdown.js');
-    renderMarkdown = await module.createMarkdownRenderer("auto");
-    */
+ 
     
     if (mdcontent) compiledContent = mdcontent;
 
     await loadMermaidAndCSS();
+    function copyCode(btn) {
+      const codeBlock = btn.closest('.code-block');
+      const codeContent = codeBlock.querySelector('code');
+      const text = codeContent.innerText;
+      
+      navigator.clipboard.writeText(text).then(() => {
+          const orig = btn.textContent;
+          btn.textContent = "已复制!";
+          setTimeout(() => {
+              btn.textContent = orig;
+          }, 1000);
+      }).catch(err => {
+          console.error('复制失败:', err);
+          alert('复制失败，请手动复制代码');
+      });
+    }
+
+window.copyCode = copyCode;
   });
 </script>
 
@@ -230,6 +246,7 @@
 
  
   }
+
 
 
  
