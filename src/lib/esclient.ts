@@ -160,6 +160,10 @@ export async function upload_file(filename,fileData,pubkey,privkey,callback){
   });
 
 }
+/*
+* book 操作区域
+*
+*/
 
 export async function create_book(bookInfo,pubkey,privkey,callback){
   await client.connect().catch(error => {});
@@ -312,6 +316,56 @@ export async function get_chapter(bookId,name,callback){
   });  
 }
 
+export async function like_book(bookId,pubkey,privkey,liked,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "C",
+      "code": 200,
+      "user": pubkey,
+      "data": '',
+      "tags":[ ['t','like_book'],['bid',bookId],['liked',liked]]
+    }
+  let sevent = secureEvent(event,privkey);
+  client.publish(sevent,function(message){
+      callback(message[2]);
+  }); 
+}
+
+export async function get_book_like(bookId,pubkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "R",
+      "code": 203,
+      "eventuser": pubkey,
+      "tags":[ ['t','like_book'],['bid',bookId]]
+    }
+  
+  client.subscribe(event,function(message){
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
+export async function get_book_like_counts(bookId,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "R",
+      "code": 204,
+      "tags":[ ['t','like_book'],['bid',bookId],["liked",true]]
+    }
+  
+  client.subscribe(event,function(message){
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
 export async function user_counts(callback){
   await client.connect().catch(error => {});
 
@@ -340,6 +394,9 @@ export async function event_counts(callback){
   });  
 }
 
+/*
+ * 用户 profile操作区域
+ */
 export async function save_user_profile(profile,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
@@ -396,6 +453,12 @@ export async function get_users_profile(pubkeys,callback){
     });      
 }
 
+
+/*
+ *
+ * blog  操作区域
+ *  
+ */
 export async function create_blog(blogData,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 

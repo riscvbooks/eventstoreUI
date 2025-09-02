@@ -11,7 +11,8 @@
     bookInfo = {}, 
     initialOutline = [], 
     firstChapter = {}, 
-    error 
+    error,
+    userPubkey = null // 假设从数据中获取当前用户公钥
   } = data;
 
   // 页面状态初始化（基于预取数据）
@@ -21,15 +22,28 @@
   let bookTitle = bookInfo.title || "";
   let coverImgurl = bookInfo.coverImgurl || "";
 
+  // 点赞和评论状态
+  let isLiked = false;
+  let likeCount = 3; // 默认值，便于测试
+  let commentCount = 5; // 默认值，便于测试
+  let isCommentPanelOpen = false;
+  let newComment = "";
+  let comments = [];
+
+  // 仅保留控件位置变量（固定位置，不动态拖动）
+  let controlPosition = {x: 1024, y: 768};
+
   let loaded = false;
   let mobileMenuOpen = false; // 控制移动端菜单显示状态
 
-  import {upload_file,
+  import {
+    upload_file,
     create_book,
     update_book,
     create_chapter,
     get_book_id,
-    get_chapter} from "$lib/esclient";
+    get_chapter,
+  } from "$lib/esclient";
    
   async function handleSetClickId(item) {
     globalClickId = item.id;
@@ -51,9 +65,8 @@
   function getFrom() {
       let url;
       url = new URL(window.location.href);
-      // 从查询参数中获取bookid（searchParams是处理URL查询参数的API）
       let value = url.searchParams.get('from');
-      return value; // 如果不存在会返回null
+      return value;
   }
 
   async function handleChapterSelect(item) {
@@ -70,17 +83,15 @@
 
   function findFirstChapterNode(items) {
     for (const item of items) {
-      // 假设章节节点有 type: 'chapter' 属性，可根据实际结构调整
       if (item.type === 'chapter' && item.id) {
         return item;
       }
-      // 如果有子节点，递归查找
       if (item.children && item.children.length > 0) {
         const found = findFirstChapterNode(item.children);
         if (found) return found;
       }
     }
-    return null; // 未找到章节节点
+    return null;
   }
 
   async function loadChapterContent(chapterId) {
@@ -91,10 +102,141 @@
     });
   }
 
+  // 点赞相关函数
+  async function handleLike() {
+    if (!userPubkey) {
+      alert("请先登录再进行点赞操作");
+      return;
+    }
+
+    // 切换点赞状态
+    isLiked = !isLiked;
+    likeCount = isLiked ? likeCount + 1 : likeCount - 1;
+    
+    // 发送点赞事件到后端
+    const likeEvent = {
+      "ops": "U", // 使用更新操作
+      "code": 205, // 点赞事件代码
+      "user": userPubkey,
+      "data": {
+        "bookId": bookId,
+        "chapterId": globalClickId, // 支持章节级点赞
+        "liked": isLiked
+      },
+      "tags": [
+        ['t', 'like'],
+        ['bid', bookId],
+        ['cid', globalClickId || ''],
+        ['u', userPubkey]
+      ]
+    };
+
+    //await sendEvent(likeEvent);
+  }
+
+  // 评论相关函数
+  async function handleCommentToggle() {
+    isCommentPanelOpen = !isCommentPanelOpen;
+    if (isCommentPanelOpen) {
+      await loadComments();
+      // 确保评论面板居中显示
+      positionCommentPanel();
+    }
+  }
+
+  // 定位评论面板到屏幕中央
+  function positionCommentPanel() {
+    const panel = document.querySelector('.comment-panel');
+    if (panel) {
+      const panelWidth = 320;
+      const panelHeight = 420;
+      
+      // 计算屏幕中央位置
+      const centerX = (window.innerWidth - panelWidth) / 2;
+      const centerY = (window.innerHeight - panelHeight) / 2;
+      
+      panel.style.left = `${centerX}px`;
+      panel.style.top = `${centerY}px`;
+    }
+  }
+
+  async function loadComments() {
+    if (!bookId || !globalClickId) return;
+
+    // 查询当前章节的评论
+    const commentFilter = {
+      "ops": "R",
+      "code": 206, // 评论事件代码
+      "tags": [
+        ['t', 'comment'],
+        ['bid', bookId],
+        ['cid', globalClickId]
+      ]
+    };
+
+    const commentList = [];
+    /*await subscribeEvents(commentFilter, (message) => {
+      if (message !== "EOSE" && message.data && message.user && message.timestamp) {
+        commentList.push({
+          id: message.id,
+          user: message.user,
+          content: message.data.content,
+          timestamp: message.timestamp,
+          author: message.data.author || '匿名用户'
+        });
+      }
+    });*/
+
+    // 按时间排序
+    comments = commentList.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  async function handleAddComment() {
+    if (!userPubkey) {
+      alert("请先登录再进行评论");
+      return;
+    }
+
+    if (!newComment.trim()) return;
+
+    // 发送评论事件
+    const commentEvent = {
+      "ops": "C",
+      "code": 206,
+      "user": userPubkey,
+      "timestamp": Date.now(),
+      "data": {
+        "bookId": bookId,
+        "chapterId": globalClickId,
+        "content": newComment,
+        "author": bookInfo.author || '匿名用户'
+      },
+      "tags": [
+        ['t', 'comment'],
+        ['bid', bookId],
+        ['cid', globalClickId],
+        ['u', userPubkey]
+      ]
+    };
+
+    //await sendEvent(commentEvent);
+    newComment = "";
+    commentCount += 1;
+    await loadComments(); // 重新加载评论
+  }
+
   onMount(async () => {
     loaded = true;
-    // 动态加载 JS
-  })
+ 
+
+    // 窗口大小改变时仅重新计算评论面板位置
+    window.addEventListener('resize', () => {
+      // 如果评论面板打开，重新居中
+      if (isCommentPanelOpen) {
+        positionCommentPanel();
+      }
+    });
+  });
 
   // 点击遮罩层关闭菜单
   function closeMenuOnBackdrop(e) {
@@ -115,7 +257,7 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* 侧边栏样式（合并重复定义，保留增强版设计） */
+    /* 侧边栏样式 */
     .book-sidebar {
       width: 340px;
       background: rgba(255, 255, 255, 0.95);
@@ -291,6 +433,7 @@
       padding: 2rem;
       overflow-y: auto;
       background-color: #ffffff;
+      position: relative;
     }
 
     .no-selection, .no-content {
@@ -631,12 +774,333 @@
       color: #000;
       text-decoration: none;
     }
+
+    .interactive-controls {
+      position: absolute; /* 相对于最近的定位父元素 */
+      right: 20px; /* 距离父元素右侧20px */
+      bottom: 20px; /* 距离父元素底部20px */
+      
+      /* 保留其他原有样式 */
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.6rem;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 12px;
+      padding: 0.5rem 0.6rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      z-index: 50;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      backdrop-filter: blur(10px);
+      height: 40px;
+      box-sizing: border-box;
+    }
+
+    /* 交互项样式 */
+    .interact-item {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+      cursor: pointer;
+      padding: 0.2rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .interact-item:hover {
+      background: rgba(248, 250, 252, 0.8);
+    }
+
+    /* 点赞项样式 */
+    .like-item {
+      color: #64748b;
+    }
+
+    .like-item:hover, .like-item.liked {
+      color: #ef4444;
+    }
+
+    .like-item.liked .interact-icon {
+      animation: heartBeat 0.5s ease;
+    }
+
+    /* 评论项样式 */
+    .comment-item-control {
+      color: #64748b;
+    }
+
+    .comment-item-control:hover, .comment-item-control.active {
+      color: #3b82f6;
+    }
+
+    /* 图标样式 */
+    .interact-icon {
+      font-size: 1.2rem;
+      transition: transform 0.2s ease;
+    }
+
+    .interact-item:hover .interact-icon {
+      transform: scale(1.1);
+    }
+
+    /* 数字样式 - 放在图标旁边 */
+    .interact-count {
+      font-size: 0.9rem;
+      font-weight: 600;
+      min-width: 1.2rem;
+      text-align: center;
+    }
+
+    .like-item .interact-count {
+      color: #ef4444;
+    }
+
+    .comment-item-control .interact-count {
+      color: #3b82f6;
+    }
+
+    /* 分隔线 */
+    .interact-divider {
+      width: 1px;
+      height: 20px;
+      background: rgba(226, 232, 240, 0.8);
+    }
+
+    /* 评论面板样式 */
+    .comment-panel {
+      position: fixed;
+      width: 320px;
+      background: rgba(255,255,255,0.98);
+      border-radius: 12px;
+      border: 1px solid rgba(2, 6, 23, 0.06);
+      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.18);
+      padding: 1.1rem;
+      max-height: 420px;
+      display: flex;
+      flex-direction: column;
+      transform: scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(.2,.8,.2,1), opacity .22s ease;
+      z-index: 100;
+      backdrop-filter: blur(8px);
+    }
+
+    .comment-panel.open {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* 评论面板遮罩 */
+    .comment-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 99;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .comment-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+
+    .comment-title {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 1rem;
+      letter-spacing: .2px;
+    }
+
+    .close-comment {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      padding: 2px 6px;
+      transition: background-color .15s ease, color .15s ease, transform .12s ease;
+    }
+
+    .close-comment:hover {
+      background: #f8fafc;
+      color: #64748b;
+    }
+
+    .close-comment:active {
+      transform: scale(0.96);
+    }
+
+    .comments-list {
+      flex: 1;
+      overflow-y: auto;
+      margin-bottom: 0.8rem;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,.6) transparent;
+    }
+
+    .comments-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .comments-list::-webkit-scrollbar-thumb {
+      background: rgba(148,163,184,.6);
+      border-radius: 999px;
+    }
+    .comments-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .comment-item {
+      padding: 0.65rem 0;
+      border-bottom: 1px dashed #eef2f7;
+      transition: background-color .15s ease;
+    }
+
+    .comment-item:hover {
+      background: rgba(248, 250, 252, 0.6);
+    }
+
+    .comment-author {
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: #4F46E5;
+      margin-bottom: 0.2rem;
+      display: inline-flex;
+      align-items: baseline;
+      gap: .4rem;
+    }
+
+    .comment-time {
+      font-size: 0.72rem;
+      color: #94a3b8;
+    }
+
+    .comment-content {
+      font-size: 0.92rem;
+      color: #334155;
+      line-height: 1.55;
+    }
+
+    .comment-input-container {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+
+    .comment-input {
+      flex: 1;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 0.92rem;
+      resize: none;
+      min-height: 48px;
+      background: #f8fafc;
+      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+    }
+
+    .comment-input::placeholder {
+      color: #9aa3b2;
+    }
+
+    .comment-input:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: #8B5CF6;
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+    }
+
+    .send-comment {
+      background: linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 0 0.9rem;
+      height: 40px;
+      min-width: 44px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: transform .14s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
+      box-shadow: 0 10px 18px rgba(79, 70, 229, 0.22);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .send-comment:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(79, 70, 229, 0.28);
+    }
+
+    .send-comment:active {
+      transform: translateY(0) scale(0.98);
+      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.18);
+    }
+
+    .no-comments {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 0.8rem 0;
+    }
+
+    /* 动画效果 */
+    @keyframes heartBeat {
+      0% { transform: scale(1); }
+      14% { transform: scale(1.3); }
+      28% { transform: scale(1); }
+      42% { transform: scale(1.3); }
+      70% { transform: scale(1); }
+    }
+
+    /* 小屏适配 */
+    @media (max-width: 520px) {
+      .comment-panel {
+        width: calc(100% - 2rem);
+        max-height: 60vh;
+      }
+      
+      .interactive-controls {
+        padding: 0.2rem 0.2rem;
+        height: 38px;
+        gap: 0.6rem;
+      }
+      
+      .interact-item {
+        padding: 0.2rem 0.2rem;
+      }
+      
+      .interact-icon {
+        font-size: 1.1rem;
+      }
+      
+      .interact-count {
+        font-size: 0.85rem;
+      }
+    }
   }
 </style>
 
 <svelte:head>
   <title>{bookTitle}</title>
- 
 </svelte:head>
 
 <!-- 页面主容器 -->
@@ -684,15 +1148,11 @@
 
     <div class="book-meta">
       <div class="py-5 px-3 relative overflow-hidden">
-        <!-- 背景装饰元素 -->
-
-        
         <!-- 书籍标题 -->
         <h1 class="book-title text-xl font-bold text-gray-800 mb-2 line-clamp-2 relative flex items-center gap-2">
           <span class="text-purple-600 text-lg">《</span>
           {bookTitle}
           <span class="text-purple-600 text-lg">》</span>
-          <!-- 新添加：标题悬停效果 -->
           <span class="inline-block w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 mt-1.5 rounded-0 group-hover:w-full-1/2 transition-all duration-300"></span>
         </h1>
         
@@ -702,15 +1162,14 @@
           <span class="text-gray-500">作者:</span>
           <span class="font-medium text-gray-700 relative group">
             {bookAuthor}
-            <!-- 作者动下划线效果 -->
             <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></span>
           </span>
         </p>
         
-        <!-- 装饰分隔线（增强化版） -->
+        <!-- 装饰分隔线 -->
         <div class="mt-4 h-px bg-gradient-to-r from-purple-300 via-blue-200 to-transparent relative-0"></div>
         
-        <!-- 章节统计（带图标） -->
+        <!-- 章节统计 -->
         {#if initialOutline.length > 0}
           <div class="mt-4 flex items-center gap-2 text-xs text-gray-500">
             <span class="w-5 h-5 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
@@ -760,17 +1219,86 @@
         <p>本书暂无内容</p>
       </div>
     {/if}
+
+    <!-- 交互控件容器（已移除拖动事件） -->
+    <div 
+      id="interactive-controls"
+      class="interactive-controls" >
+      <!-- 点赞项 -->
+      <div 
+        class="interact-item like-item {isLiked ? 'liked' : ''}"
+        on:click={handleLike}
+        title={isLiked ? "取消点赞" : "点赞"}
+      >
+        <i class="fa {isLiked ? 'fa-heart' : 'fa-heart-o'} interact-icon"></i>
+        <span class="interact-count">{likeCount}</span>
+      </div>
+
+      <!-- 评论项 -->
+      <div 
+        class="interact-item comment-item-control {isCommentPanelOpen ? 'active' : ''}"
+        on:click={handleCommentToggle}
+        title="评论"
+      >
+        <i class="fa fa-comment-o interact-icon"></i>
+        <span class="interact-count">{commentCount}</span>
+      </div>
+    </div>
+
   </main>
 
   <!-- 右侧 TOC 容器 -->
   <aside class="right-toc-container" id="right-toc">
     <!-- TOC 内容将由 ViewMD 生成并插入 -->
   </aside>
+
+  <!-- 评论面板遮罩 -->
+  <div class="comment-backdrop {isCommentPanelOpen ? 'open' : ''}" on:click={handleCommentToggle}></div>
+
+  
+  <!-- 评论面板 - 居中显示 -->
+  <div class="comment-panel {isCommentPanelOpen ? 'open' : ''}">
+    <div class="comment-header">
+      <h3 class="comment-title">章节评论</h3>
+      <button class="close-comment" on:click={handleCommentToggle}>
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+
+    <div class="comments-list">
+      {#if comments.length > 0}
+        {#each comments as comment}
+          <div class="comment-item">
+            <div class="comment-author">
+              {comment.author}
+              <span class="comment-time">
+                {new Date(comment.timestamp).toLocaleString()}
+              </span>
+            </div>
+            <div class="comment-content">{comment.content}</div>
+          </div>
+        {/each}
+      {:else}
+        <div class="no-comments">暂无评论，快来抢沙发~</div>
+      {/if}
+    </div>
+
+    <div class="comment-input-container">
+      <textarea 
+        class="comment-input" 
+        placeholder="写下你的评论..."
+        bind:value={newComment}
+        on:keydown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddComment())}
+      ></textarea>
+      <button class="send-comment" on:click={handleAddComment}>
+        <i class="fa fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
 <div class="outline1-links" aria-hidden="true">
   <h2>{bookTitle} 章节链接</h2>
-  <!-- 使用 Svelte 模板递归渲染链接 -->
   {#if initialOutline.length > 0}
     <ul class="outline1-links-list">
       {#each initialOutline as item}
