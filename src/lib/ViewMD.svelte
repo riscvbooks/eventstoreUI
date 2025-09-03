@@ -98,20 +98,31 @@
     return { tocHtml: `<div class="toc-container">${tocHtml}</div>`, tocData: tocList };
   }
 
+
+  function handleScroll(activeId = '') {
+     const tocResult = extractHeadingsAndContent();
+     
+        const scrollY = window.scrollY + 100;
+        if ( activeId == ''){
+          tocResult.tocData.forEach(item => {
+            const heading = document.getElementById(item.id);
+            if (heading) {
+              const rect = heading.getBoundingClientRect();
+              if (rect.top <= 100 && rect.bottom >= 0) activeId = item.id;
+            }
+          });
+        } 
+
+        const links = document.querySelectorAll('.toc-link');
+         
+        links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`));
+  }
+
+
   function initTocScrollHighlight(tocData: any[]) {
-    function handleScroll() {
-      const scrollY = window.scrollY + 100;
-      let activeId = '';
-      tocData.forEach(item => {
-        const heading = document.getElementById(item.id);
-        if (heading) {
-          const rect = heading.getBoundingClientRect();
-          if (rect.top <= 100 && rect.bottom >= 0) activeId = item.id;
-        }
-      });
-      const links = document.querySelectorAll('.toc-link');
-      links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === `#${activeId}`));
-    }
+   
+
+  
     window.addEventListener('scroll', handleScroll);
     handleScroll();
   }
@@ -120,11 +131,14 @@
     const tocLinks = document.querySelectorAll('.toc-link');
     tocLinks.forEach(link => {
       link.addEventListener('click', e => {
+         
         e.preventDefault();
+        
         const targetId = link.getAttribute('href').replace('#','');
         const el = document.getElementById(targetId);
         if(el) el.scrollIntoView({ behavior:'smooth', block:'start' });
         history.pushState(null,null, `#${targetId}`);
+        handleScroll(targetId);
       });
     });
   }
