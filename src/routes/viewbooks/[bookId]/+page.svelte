@@ -146,94 +146,35 @@
     })
   }
 
-  // 评论相关函数
-  async function handleCommentToggle() {
-    isCommentPanelOpen = !isCommentPanelOpen;
-    if (isCommentPanelOpen) {
-      await loadComments();
-      // 确保评论面板居中显示
-      positionCommentPanel();
-    }
-  }
-
-  // 定位评论面板到屏幕中央
-  function positionCommentPanel() {
-    const panel = document.querySelector('.comment-panel');
-    if (panel) {
-      const panelWidth = 320;
-      const panelHeight = 420;
-      
-      // 计算屏幕中央位置
-      const centerX = (window.innerWidth - panelWidth) / 2;
-      const centerY = (window.innerHeight - panelHeight) / 2;
-      
-      panel.style.left = `${centerX}px`;
-      panel.style.top = `${centerY}px`;
-    }
-  }
+ 
 
   async function loadComments() {
-    if (!bookId || !globalClickId) return;
+    if (!bookId) return;
 
-    // 查询当前章节的评论
-    const commentFilter = {
-      "ops": "R",
-      "code": 206, // 评论事件代码
-      "tags": [
-        ['t', 'comment'],
-        ['bid', bookId],
-        ['cid', globalClickId]
-      ]
-    };
+    let commentList = [];
 
-    const commentList = [];
-    /*await subscribeEvents(commentFilter, (message) => {
-      if (message !== "EOSE" && message.data && message.user && message.timestamp) {
-        commentList.push({
-          id: message.id,
-          user: message.user,
-          content: message.data.content,
-          timestamp: message.timestamp,
-          author: message.data.author || '匿名用户'
-        });
+    get_book_comments(bookId,function(message){
+      if (message != 'EOSE') {
+        comments = commentList.sort((a, b) => b.created_at - a.created_at);
       }
-    });*/
+      commentList.push(message)
+    })
 
     // 按时间排序
-    comments = commentList.sort((a, b) => b.timestamp - a.timestamp);
+    
   }
 
   async function handleAddComment() {
-    if (!userPubkey) {
+    if (!Keypub) {
       alert("请先登录再进行评论");
       return;
     }
 
     if (!newComment.trim()) return;
 
-    // 发送评论事件
-    const commentEvent = {
-      "ops": "C",
-      "code": 206,
-      "user": userPubkey,
-      "timestamp": Date.now(),
-      "data": {
-        "bookId": bookId,
-        "chapterId": globalClickId,
-        "content": newComment,
-        "author": bookInfo.author || '匿名用户'
-      },
-      "tags": [
-        ['t', 'comment'],
-        ['bid', bookId],
-        ['cid', globalClickId],
-        ['u', userPubkey]
-      ]
-    };
-
-    //await sendEvent(commentEvent);
-    newComment = "";
-    commentCount += 1;
+    comment_book(bookId,Keypub,Keypriv,newComment,function(message){
+      console.log(message)
+    })
     await loadComments(); // 重新加载评论
   }
 
@@ -250,6 +191,8 @@
         if (message != 'EOSE') isLiked = getTagValue(message.tags,'liked');
       })
     } 
+
+    loadComments();
 
     // 窗口大小改变时仅重新计算评论面板位置
     window.addEventListener('resize', () => {
@@ -1243,6 +1186,32 @@
       </div>
     {/if}
 
+
+    <div class="comments-list">
+      {#if comments.length > 0}
+        {#each comments as comment}
+          <div class="comment-item">
+            <div class="comment-author">
+              {comment.author}
+              <span class="comment-time">
+                {comment.servertimestamp 
+                  ? new Date(comment.servertimestamp).toLocaleDateString('zh-CN', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric'
+                    })
+                  : '未知日期'
+                }
+              </span>
+            </div>
+            <div class="comment-content">{comment.data}</div>
+          </div>
+        {/each}
+      {:else}
+        <div class="no-comments">暂无评论，快来抢沙发~</div>
+      {/if}
+    </div>
+
     <!-- 交互控件容器（已移除拖动事件） -->
     <div 
       id="interactive-controls"
@@ -1283,28 +1252,9 @@
   <div class="comment-panel {isCommentPanelOpen ? 'open' : ''}">
     <div class="comment-header">
       <h3 class="comment-title">章节评论</h3>
-      <button class="close-comment" on:click={handleCommentToggle}>
-        <i class="fa fa-times"></i>
-      </button>
+ 
     </div>
 
-    <div class="comments-list">
-      {#if comments.length > 0}
-        {#each comments as comment}
-          <div class="comment-item">
-            <div class="comment-author">
-              {comment.author}
-              <span class="comment-time">
-                {new Date(comment.timestamp).toLocaleString()}
-              </span>
-            </div>
-            <div class="comment-content">{comment.content}</div>
-          </div>
-        {/each}
-      {:else}
-        <div class="no-comments">暂无评论，快来抢沙发~</div>
-      {/if}
-    </div>
 
     <div class="comment-input-container">
       <textarea 
