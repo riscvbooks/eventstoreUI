@@ -3,6 +3,23 @@
   import ViewNestedTree from '$lib/ViewNestedTree.svelte';
   import "$lib/editbook.css";
   import ViewMD from '$lib/ViewMD.svelte';
+  import {
+    upload_file,
+    create_book,
+    update_book,
+    create_chapter,
+    get_book_id,
+    get_chapter,
+    like_book,
+    comment_book,
+    get_book_like,
+    get_book_like_counts,
+    get_book_comments,
+    get_book_comment_counts,
+
+  } from "$lib/esclient";
+
+  import {getKey} from "$lib/getkey";
 
   export let data;
   // 从数据中解构需要的字段（带默认值，避免 undefined 错误）
@@ -24,27 +41,38 @@
 
   // 点赞和评论状态
   let isLiked = false;
-  let likeCount = 3; // 默认值，便于测试
-  let commentCount = 5; // 默认值，便于测试
+  let likeCount = 0; // 默认值，便于测试
+  let commentCount = 0; // 默认值，便于测试
   let isCommentPanelOpen = false;
   let newComment = "";
   let comments = [];
 
-  // 仅保留控件位置变量（固定位置，不动态拖动）
-  let controlPosition = {x: 1024, y: 768};
+
+ 
+
+
+  let Keypriv;
+  let Keypub;
+
 
   let loaded = false;
   let mobileMenuOpen = false; // 控制移动端菜单显示状态
 
-  import {
-    upload_file,
-    create_book,
-    update_book,
-    create_chapter,
-    get_book_id,
-    get_chapter,
-  } from "$lib/esclient";
+
+  get_book_like_counts(bookId,function(message){
+    if (message.code == 200) likeCount = message.counts;
+  })
+
+  get_book_comment_counts(bookId,function(message){
+    if (message.code == 200) commentCount = message.counts;
+  })
    
+  function getTagValue(tags,t) {
+    const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
+    return dTag ? dTag[1] : null;
+  }
+
+  
   async function handleSetClickId(item) {
     globalClickId = item.id;
  
@@ -104,7 +132,7 @@
 
   // 点赞相关函数
   async function handleLike() {
-    if (!userPubkey) {
+    if (!Keypriv) {
       alert("请先登录再进行点赞操作");
       return;
     }
@@ -113,25 +141,9 @@
     isLiked = !isLiked;
     likeCount = isLiked ? likeCount + 1 : likeCount - 1;
     
-    // 发送点赞事件到后端
-    const likeEvent = {
-      "ops": "U", // 使用更新操作
-      "code": 205, // 点赞事件代码
-      "user": userPubkey,
-      "data": {
-        "bookId": bookId,
-        "chapterId": globalClickId, // 支持章节级点赞
-        "liked": isLiked
-      },
-      "tags": [
-        ['t', 'like'],
-        ['bid', bookId],
-        ['cid', globalClickId || ''],
-        ['u', userPubkey]
-      ]
-    };
-
-    //await sendEvent(likeEvent);
+    like_book(bookId,Keypub,Keypriv,function(message){
+       if (message.code == 200)  isLiked = message.liked;
+    })
   }
 
   // 评论相关函数
@@ -228,6 +240,16 @@
   onMount(async () => {
     loaded = true;
  
+    let Key = getKey();
+    
+    Keypriv = Key.Keypriv;
+    Keypub = Key.Keypub;
+
+    if (Keypub ){
+      get_book_like(bookId,Keypub,function(message){
+        if (message != 'EOSE') isLiked = getTagValue(message.tags,'liked');
+      })
+    } 
 
     // 窗口大小改变时仅重新计算评论面板位置
     window.addEventListener('resize', () => {
@@ -817,7 +839,8 @@
       color: #64748b;
     }
 
-    .like-item:hover, .like-item.liked {
+   
+    .like-item.liked {
       color: #ef4444;
     }
 

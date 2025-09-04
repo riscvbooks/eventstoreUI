@@ -316,16 +316,16 @@ export async function get_chapter(bookId,name,callback){
   });  
 }
 
-export async function like_book(bookId,pubkey,privkey,liked,callback){
+export async function like_book(bookId,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
   let event = {
   
       "ops": "C",
-      "code": 200,
+      "code": 600,
       "user": pubkey,
       "data": '',
-      "tags":[ ['t','like_book'],['bid',bookId],['liked',liked]]
+      "tags":[ ['t','like_book'],['bid',bookId]]
     }
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
@@ -339,7 +339,7 @@ export async function get_book_like(bookId,pubkey,callback){
   let event = {
   
       "ops": "R",
-      "code": 203,
+      "code": 603,
       "eventuser": pubkey,
       "tags":[ ['t','like_book'],['bid',bookId]]
     }
@@ -356,8 +356,8 @@ export async function get_book_like_counts(bookId,callback){
   let event = {
   
       "ops": "R",
-      "code": 204,
-      "tags":[ ['t','like_book'],['bid',bookId],["liked",true]]
+      "code": 604,
+      "tags":[ ['t','like_book'],['bid',bookId],["liked",1]]
     }
   
   client.subscribe(event,function(message){
@@ -365,6 +365,57 @@ export async function get_book_like_counts(bookId,callback){
       callback(message[2]);
   }); 
 }
+
+
+export async function comment_book(bookId,pubkey,privkey,content,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "C",
+      "code": 500,
+      "user": pubkey,
+      "data": content,
+      "tags":[ ['t','comment_book'],['bid',bookId], ]
+    }
+  let sevent = secureEvent(event,privkey);
+  client.publish(sevent,function(message){
+      callback(message[2]);
+  }); 
+}
+
+export async function get_book_comments(bookId,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "R",
+      "code": 503,
+      "tags":[ ['t','comment_book'],['bid',bookId]]
+    }
+  
+  client.subscribe(event,function(message){
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
+export async function get_book_comment_counts(bookId,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "R",
+      "code": 504,
+      "tags":[ ['t','comment_book'],['bid',bookId]]
+    }
+  
+  client.subscribe(event,function(message){
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
 
 export async function user_counts(callback){
   await client.connect().catch(error => {});
