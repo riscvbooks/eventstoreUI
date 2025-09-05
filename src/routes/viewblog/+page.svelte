@@ -3,7 +3,13 @@
   import { uploadpath } from "$lib/config";
   import { getKey } from "$lib/getkey";
   import { showNotification } from "$lib/message";
-  import { get_blog_id, get_user_profile } from "$lib/esclient";
+  import { get_blog_id, 
+  get_user_profile,
+    like_blog, 
+    get_blog_like, 
+    get_blog_like_counts,
+    comment_blog, 
+    get_blog_comments } from "$lib/esclient";
   import ViewMD from '$lib/ViewMD.svelte';
 
   const colorPool = [
@@ -19,30 +25,152 @@
   export let data;
   const { blogId, blogData, userProfile, error } = data;
 
- 
-   
+  let Keypriv;
+  let Keypub;
+
   let currentContent = blogData?.content || "";
   let user_profile = userProfile;
   let loaded = false;
+  
+  // 点赞相关状态
+  let isLiked = false;
+  let likeCount = 0;
+  let likeLoading = false;
+  
+  // 评论相关状态
+  let commentList = [];
+  let commentInput = "";
+  let commentLoading = false;
+  let submitCommentLoading = false;
+  
+  
+  // 初始化点赞状态和数量
+  async function initLikeStatus() {
+    if (!blogId) return;
+    try {
+      // 获取当前用户是否点赞
+      // 获取点赞总数
+      await get_blog_like_counts(blogId, (message) => {
+        if (message.code == 200) likeCount = message.counts;
+      });
+    } catch (err) {
+      showNotification("加载点赞数据失败", "error");
+    }
+  }
 
-  function getBlogId() {
-    const url = new URL(window.location.href);
-    return url.searchParams.get('blogid');
+  // 加载评论列表
+  async function loadComments() {
+    if (!blogId) return;
+    
+    commentLoading = true;
+    let tempComments = [];
+    
+    try {
+      get_blog_comments(blogId, function(message) {
+        if (message != 'EOSE') {
+          tempComments.push(message);
+          // 格式化并排序评论
+          commentList = [...tempComments].map(comment => ({
+            ...comment,
+            formattedTime: comment.servertimestamp 
+              ? new Date(comment.servertimestamp).toLocaleString('zh-CN', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : '未知时间',
+ 
+          })).sort((a, b) => 
+            (b.servertimestamp || 0) - (a.servertimestamp || 0)
+          );
+        } else {
+          // 当收到EOSE信号时如果还没有评论，设置为空数组
+          if (commentList.length === 0) {
+            commentList = [];
+          }
+          commentLoading = false;
+        }
+      });
+    } catch (err) {
+      showNotification("加载评论失败", "error");
+      commentLoading = false;
+    }
+  }
+
+  // 点赞/取消点赞操作
+  async function handleLike() {
+    if (!blogId || !Keypub || !Keypriv || likeLoading) return;
+    likeLoading = true;
+    try {
+      await like_blog(blogId, Keypub, Keypriv, (res) => {
+        if (res && res.code === 200) {
+          isLiked = !isLiked;
+          likeCount = isLiked ? likeCount + 1 : likeCount - 1;
+          showNotification(isLiked ? "点赞成功" : "取消点赞成功", "success");
+        } else {
+          showNotification(isLiked ? "取消点赞失败" : "点赞失败", "error");
+        }
+      });
+    } catch (err) {
+      showNotification("操作失败，请重试", "error");
+    } finally {
+      likeLoading = false;
+    }
+  }
+
+  // 提交评论操作
+  async function handleSubmitComment() {
+    if (!blogId || !Keypub || !Keypriv || !commentInput.trim() || submitCommentLoading) return;
+    submitCommentLoading = true;
+    try {
+      await comment_blog(blogId, Keypub, Keypriv, commentInput.trim(), (res) => {
+        if (res && res.code === 200) {
+          showNotification("评论提交成功", "success");
+          commentInput = "";
+          // 重新加载评论列表
+          loadComments();
+        } else {
+          showNotification("评论提交失败", "error");
+        }
+      });
+    } catch (err) {
+      showNotification("评论提交出错，请重试", "error");
+    } finally {
+      submitCommentLoading = false;
+    }
   }
 
   onMount(async () => {
-    // 加载样式和脚本
-
-
     loaded = true;
+    // 初始化点赞和评论数据
+    const Key = getKey();
+    Keypriv = Key.Keypriv;
+    Keypub = Key.Keypub;
 
+    if (Keypub) {
+      get_blog_like(blogId, Keypub, function(message) {
+        if (message != 'EOSE') {
+          isLiked = getTagValue(message.tags, 'liked');
+        }
+      });
+    }
+
+    await initLikeStatus();
+    loadComments();
   });
+
+  // 补充getTagValue函数
+  function getTagValue(tags, key) {
+    const tag = tags.find(item => item[0] === key);
+    return tag ? tag[1] : false;
+  }
 </script>
 
 <style>
 :global {
-
-
+  /* 原有样式保持不变 */
   .blog-content p {
     margin-bottom: 1.5rem;
     line-height: 1.7;
@@ -146,65 +274,63 @@
   }
 
   .toc-container {
-  background: #f9f9f9;       /* 背景色 */
-  border-left: 3px solid #4CAF50; /* 左边装饰线 */
-  padding: 10px 15px;
-  border-radius: 6px;
-  font-family: "Segoe UI", sans-serif;
-  font-size: 14px;
-}
+    background: #f9f9f9;
+    border-left: 3px solid #4CAF50;
+    padding: 10px 15px;
+    border-radius: 6px;
+    font-family: "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
 
-.toc-item {
-  margin: 5px 0;
-  transition: all 0.2s;
-}
+  .toc-item {
+    margin: 5px 0;
+    transition: all 0.2s;
+  }
 
-.toc-link {
-  text-decoration: none;
-  color: #333;
-  display: inline-block;
-  width: 100%;
-}
+  .toc-link {
+    text-decoration: none;
+    color: #333;
+    display: inline-block;
+    width: 100%;
+  }
 
-.toc-link:hover {
-  color: #4CAF50;
-  font-weight: bold;
-}
+  .toc-link:hover {
+    color: #4CAF50;
+    font-weight: bold;
+  }
 
-.toc-link.active {
-  color: #4CAF50;
-  font-weight: bold;
-  position: relative;
-}
+  .toc-link.active {
+    color: #4CAF50;
+    font-weight: bold;
+    position: relative;
+  }
 
-.toc-link.active::before {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 6px;
-  height: 6px;
-  background-color: #4CAF50;
-  border-radius: 50%;
-}
+  .toc-link.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+  }
 
   /* 隔离横条容器 */
   .blog-divider {
     display: flex;
     align-items: center;
     width: 100%;
-    gap: 12px; /* 线条与圆点间距 */
+    gap: 12px;
     opacity: 0.8;
     transition: opacity 0.3s ease;
   }
 
-  /* 鼠标悬停时增强显示 */
   .blog-divider:hover {
     opacity: 1;
   }
 
-  /* 线条样式 - 渐变效果 */
   .divider-line {
     flex: 1;
     height: 1px;
@@ -216,18 +342,16 @@
     transition: all 0.5s ease;
   }
 
-  /* 中间圆点装饰 */
   .divider-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background-color: #4F46E5; /* 主色调圆点 */
+    background-color: #4F46E5;
     position: relative;
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
     transition: transform 0.3s ease;
   }
 
-  /* 圆点呼吸效果 */
   .divider-dot::after {
     content: '';
     position: absolute;
@@ -256,7 +380,6 @@
     }
   }
 
-  /* 顶部底部横条差异化 */
   .top-divider .divider-line {
     background: linear-gradient(90deg, 
       rgba(79, 70, 229, 0) 0%, 
@@ -274,7 +397,7 @@
   }
 
   .bottom-divider .divider-dot {
-    background-color: #8B5CF6; /* 底部使用辅助色 */
+    background-color: #8B5CF6;
     box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
   }
 
@@ -282,7 +405,6 @@
     background-color: rgba(139, 92, 246, 0.2);
   }
 
-  /* 响应式调整 */
   @media (max-width: 768px) {
     .blog-divider {
       gap: 8px;
@@ -297,7 +419,338 @@
     }
   }
 
+  /* -------------------------- 点赞区域样式 -------------------------- */
+  .blog-like-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 0;
+    margin-bottom: 2rem;
+    border-radius: 12px;
+    background-color: #fff;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+  }
 
+  .blog-like-section:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .like-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 30px;
+    background-color: #f8fafc;
+    color: #64748b;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+  }
+
+  .like-btn:hover {
+    background-color: #f1f5f9;
+    color: #4f46e5;
+  }
+
+  .like-btn.liked {
+    background-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+  }
+
+  .like-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+  }
+
+  .like-btn.liked .like-icon {
+    animation: likePulse 0.5s ease;
+  }
+
+  .like-count {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+
+  .like-loading {
+    width: 1.2rem;
+    height: 1.2rem;
+    border: 2px solid #cbd5e1;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes likePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* -------------------------- 评论区域样式 -------------------------- */
+  .blog-comment-section {
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+    padding: 2rem;
+    margin-bottom: 3rem;
+  }
+
+  .comment-section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+ 
+
+  /* 评论输入框样式 */
+  .comment-input-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  /* 评论作者头像样式 */
+  .comment-author-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #4f46e5;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .comment-author-avatar-nobg {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .comment-input-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .comment-input {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    resize: vertical;
+    min-height: 100px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .comment-input:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 5px rgba(79, 70, 229, 0.1);
+  }
+
+  .comment-submit-btn {
+    align-self: flex-end;
+    padding: 0.6rem 1.5rem;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .comment-submit-btn:hover {
+    background-color: #4338ca;
+  }
+
+  .comment-submit-btn:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+  }
+
+  .submit-loading {
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  /* 评论列表样式 */
+  .comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .comment-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1.2rem;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .comment-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .comment-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+
+  .comment-content-wrapper {
+    flex: 1;
+  }
+
+  .comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .comment-author {
+    font-weight: 600;
+    color: #1e293b;
+  }
+
+  .comment-time {
+    font-size: 0.85rem;
+    color: #94a3b8;
+  }
+
+  .comment-text {
+    color: #334155;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+  }
+
+  /* 加载状态样式 */
+  .comments-loading {
+    text-align: center;
+    padding: 2rem;
+    color: #64748b;
+  }
+
+  .comment-header-divider {
+      height: 1px;
+      background: repeating-linear-gradient(
+        to right,
+        rgba(148, 163, 184, 0.6),  /* 更深的灰色，提高不透明度 */
+        rgba(148, 163, 184, 0.6) 6px,  /* 增加实线长度 */
+        transparent 6px,
+        transparent 12px  /* 增加整体周期长度 */
+      );
+      margin: 0.75rem 0;  /* 稍大的间距，增强分离感 */
+      width: 100%;
+  }
+
+
+  .loading-spinner {
+    width: 2rem;
+    height: 2rem;
+    border: 3px solid #e2e8f0;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  /* 无评论状态 */
+  .no-comments {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #64748b;
+    background-color: #f8fafc;
+    border-radius: 8px;
+  }
+
+  .no-comments-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #cbd5e1;
+  }
+
+  /* 响应式评论区 */
+  @media (max-width: 768px) {
+    .blog-comment-section {
+      padding: 1.2rem;
+    }
+
+    .comment-section-title {
+      font-size: 1.2rem;
+    }
+
+    .comment-input-container {
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .user-avatar, .comment-author-avatar {
+      width: 36px;
+      height: 36px;
+    }
+
+    .comment-item {
+      padding: 0.8rem;
+    }
+
+    .comment-avatar {
+      width: 40px;
+      height: 40px;
+    }
+  }
 }
 </style>
 
@@ -376,12 +829,97 @@
           {/if}
         </div>
       </div>
-        <div class="blog-divider top-divider mb-6">
-          <div class="divider-line"></div>
-          <div class="divider-dot"></div>
-          <div class="divider-line"></div>
-        </div>
 
+      <!-- 点赞区域 -->
+      <div class="blog-like-section">
+        <button 
+          class="like-btn {isLiked ? 'liked' : ''}" 
+          on:click={handleLike}
+          disabled={!Keypub || !Keypriv}
+        >
+          {#if likeLoading}
+            <div class="like-loading"></div>
+          {:else}
+            <i class={`like-icon ${isLiked ? 'fas fa-heart' : 'far fa-heart'}`}></i>
+          {/if}
+          <span class="like-count">{likeCount}</span>
+          <span>{isLiked ? '已点赞' : '点赞'}</span>
+        </button>
+      </div>
+
+      <!-- 评论区域 -->
+      <div class="blog-comment-section">
+        <h3 class="comment-section-title">
+          评论区
+          <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">{commentList.length}</span>
+        </h3>
+
+        <!-- 评论输入框 -->
+        {#if Keypub && Keypriv}
+          <div class="comment-input-container">
+                <div class="comment-author-avatar">
+                  <span>{'U'}</span>
+                </div>
+            <div class="comment-input-wrapper">
+              <textarea 
+                class="comment-input" 
+                placeholder="分享你的想法..." 
+                bind:value={commentInput}
+              ></textarea>
+              <button 
+                class="comment-submit-btn" 
+                on:click={handleSubmitComment}
+                disabled={!commentInput.trim() || submitCommentLoading}
+              >
+                {#if submitCommentLoading}
+                  <div class="submit-loading"></div>
+                  <span>提交中...</span>
+                {:else}
+                  <span>发表评论</span>
+                {/if}
+              </button>
+            </div>
+          </div>
+        {:else}
+          <div class="text-center py-3 mb-4 text-gray-600 bg-gray-50 rounded-lg">
+            请先登录再发表评论
+          </div>
+        {/if}
+
+        <!-- 评论列表 -->
+        {#if commentLoading}
+          <div class="comments-loading">
+            <div class="loading-spinner"></div>
+            <p>加载评论中...</p>
+          </div>
+        {:else if commentList.length === 0}
+          <div class="no-comments">
+            <i class="far fa-comment-dots no-comments-icon"></i>
+            <p>还没有评论，快来抢沙发吧~</p>
+          </div>
+        {:else}
+          <div class="comments-list">
+            {#each commentList as comment,index}
+              <div class="comment-item">
+                <div class={`comment-author-avatar-nobg ${colorPool[index % colorPool.length].bgClass}`}>
+                  <span class={colorPool[index % colorPool.length].textClass}>
+                    {'U'}
+                  </span>
+                </div>
+
+                <div class="comment-content-wrapper">
+                  <div class="comment-header">
+                    <span class="comment-author">{'本站用户'}</span>
+                    <span class="comment-time">{comment.formattedTime}</span>
+                  </div>
+                  <div class="comment-header-divider"></div>
+                  <div class="comment-text">{comment.data}</div>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
 
@@ -393,3 +931,4 @@
     </div>
   </aside>
 </div>
+    

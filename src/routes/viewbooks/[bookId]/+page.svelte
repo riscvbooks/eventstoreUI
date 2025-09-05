@@ -229,12 +229,7 @@
     }
   }
 
-  // 点击评论遮罩关闭评论框
-  function closeCommentOnBackdrop(e) {
-    if (e.target.classList.contains('comment-input-backdrop')) {
-      showCommentInput = false;
-    }
-  }
+ 
 </script>
 
 <style>
@@ -840,9 +835,6 @@
     /* 渐变边框容器样式 */
     .gradient-border-container {
       position: relative;
-      padding: 2px; /* 扩大背景区域 */
-      border-radius: 16px;
-      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
       width: auto;
       opacity: 0;
       pointer-events: none;
@@ -856,39 +848,17 @@
       opacity: 1;
       pointer-events: auto;
       right:0px;
+
     }
 
-    .gradient-border-container::before,
-    .gradient-border-container::after {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border-radius: 18px;
-        z-index: 0;
-        pointer-events: none;
-    }
-    
-    .gradient-border-container::before {
-        background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-        z-index: -1;
-    }
-    
-    .gradient-border-container::after {
-        top: -4px;
-        left: -4px;
-        right: -4px;
-        bottom: -4px;
-        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-        z-index: -2;
-    }
+  
         
     
     .comment-input-container {
       position: relative;
       width: 100%;
+      border-color: #8B5CF6;
+
     }
 
     .comment-input {
@@ -904,14 +874,17 @@
       transition: border-color .15s ease, box-shadow .15s ease;
       box-sizing: border-box;
       box-shadow: 
-        0 1px 2px rgba(0,0,0,0.03);
+        0 0 0 3px rgba(139, 92, 246, 0.2);
     }
-    
+
     .comment-input:focus {
       outline: none;
       border-color: #8B5CF6;
+      /* 两层递进式阴影，内层颜色深、范围小，外层颜色浅、范围大 */
       box-shadow: 
-        0 0 0 2px rgba(139, 92, 246, 0.1);
+        0 0 0 3px rgba(139, 92, 246, 0.2),  /* 内层阴影 - 颜色较深，范围较小 */
+        0 0 0 8px rgba(139, 92, 246, 0.08); /* 外层阴影 - 颜色较浅，范围较大 */
+      transition: border-color .15s ease, box-shadow .15s ease;
     }
  
     .comment-actions {

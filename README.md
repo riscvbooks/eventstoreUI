@@ -98,5 +98,5 @@ npm run preview
 
 ## 相关链接
 
-- 辰龙社区文档中心：https://docs.chenlongos.cn（eventstoreUI 实际应用场景）
-- eventstore 后端项目：https://github.com/asmcos/eventstore（eventstoreUI 依赖的核心后端服务）
+- 辰龙社区文档中心：https://docs.chenlongos.cn  （eventstoreUI 实际应用场景）
+- eventstore 后端项目：https://github.com/asmcos/eventstore （eventstoreUI 依赖的核心后端服务）

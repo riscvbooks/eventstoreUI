@@ -613,3 +613,99 @@ export async function blog_counts(pubkey,callback){
     callback(message[2])
   });  
 }
+
+/*
+ * blog 点赞和评论操作区域
+ */
+export async function like_blog(blogId, pubkey, privkey, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "C",
+      "code": 600,
+      "user": pubkey,
+      "data": '',
+      "tags": [['t', 'like_blog'], ['bid', blogId]]
+    }
+  let sevent = secureEvent(event, privkey);
+  client.publish(sevent, function(message) {
+      callback(message[2]);
+  }); 
+}
+
+export async function get_blog_like(blogId, pubkey, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "R",
+      "code": 603,
+      "eventuser": pubkey,
+      "tags": [['t', 'like_blog'], ['bid', blogId]]
+    }
+  
+  client.subscribe(event, function(message) {
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
+export async function get_blog_like_counts(blogId, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "R",
+      "code": 604,
+      "tags": [['t', 'like_blog'], ['bid', blogId], ["liked", 1]]
+    }
+  
+  client.subscribe(event, function(message) {
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
+export async function comment_blog(blogId, pubkey, privkey, content, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "C",
+      "code": 500,
+      "user": pubkey,
+      "data": content,
+      "tags": [['t', 'comment_blog'], ['bid', blogId]]
+    }
+  let sevent = secureEvent(event, privkey);
+  client.publish(sevent, function(message) {
+      callback(message[2]);
+  }); 
+}
+
+export async function get_blog_comments(blogId, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "R",
+      "code": 503,
+      "tags": [['t', 'comment_blog'], ['bid', blogId]]
+    }
+  
+  client.subscribe(event, function(message) {
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
+
+export async function get_blog_comment_counts(blogId, callback) {
+  await client.connect().catch(error => {});
+
+  let event = {
+      "ops": "R",
+      "code": 504,
+      "tags": [['t', 'comment_blog'], ['bid', blogId]]
+    }
+  
+  client.subscribe(event, function(message) {
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      callback(message[2]);
+  }); 
+}
