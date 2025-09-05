@@ -20,48 +20,7 @@
   let users_profile = data.users_profile;
 
   let displayedBooks = data.books;
-  function handleBooks(e){
-     
-    if (e != "EOSE"){
-        // 改变bookId
-        if (getTagValue(e.tags,'d')){
-            e.id = getTagValue(e.tags,'d');
-        } 
-
-        books.push(e)
-    } else {
-        displayedBooks = [...books]
-    }
-     
-  }
-
-  
-  function handle_blogs(message){
-    if (message == "EOSE"){
-      
-      get_users_profile(users_pubkey, message =>{
-         if (message != "EOSE"){
-            message.data = JSON.parse(message.data)
-            users_profile[message.user] = message;
-             
-         }
-      });
-    }
-    else {
-      let temp = blogs;
-      message.data = JSON.parse(message.data)
-      if (getTagValue(message.tags,'d')){
-          message.id = getTagValue(message.tags,'d');
-      } 
-      
-      temp.push(message)
-      if (message.user && !users_pubkey.includes(message.user)) {
-         users_pubkey.push(message.user);
-
-      }
-      blogs = temp;
-    }
-  }
+ 
 
     function goTobook(bookId){
         window.location.href = "/viewbooks/" + bookId;
@@ -70,9 +29,7 @@
  
     onMount(async () => {
  
-          //offset 0, limit 20
-        //await get_books(null,0,4,handleBooks);
-        //await get_blogs(null, 0, 0, 3,handle_blogs);
+ 
     });
 
  
@@ -133,26 +90,9 @@
     });
 
     // 平滑滚动
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href');
-        if (targetId === '#') return;
-        
-        const targetElement = document.querySelector(targetId);
-        if (targetElement) {
-          window.scrollTo({
-            top: targetElement.offsetTop - 80,
-            behavior: 'smooth'
-          });
-          
-          // 关闭移动端菜单
-          if (!mobileMenu.classList.contains('hidden')) {
-            mobileMenu.classList.add('hidden');
-          }
-        }
-      });
-    });
+
+
+
   });
 </script>
 
