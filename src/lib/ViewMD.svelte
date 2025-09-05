@@ -248,6 +248,24 @@ window.copyCode = copyCode;
     display: none;
   }
 
+/* 在 ViewMD.svelte 的样式部分添加 */
+:global(.vp-doc img) {
+  border-radius: 8px;
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.2),  /* 内层：近阴影，稍深，范围小 */
+    0 4px 16px rgba(0, 0, 0, 0.1); /* 外层：远阴影，更浅，范围大 */
+  max-width: 100%;
+  height: auto;
+  margin: 1.5rem auto;
+  display: block;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 可选：添加悬停效果 */
+:global(.vp-doc img:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
  
 
   /* 响应式适配 */
