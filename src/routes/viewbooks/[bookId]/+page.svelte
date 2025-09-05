@@ -16,99 +16,91 @@
     get_book_like_counts,
     get_book_comments,
     get_book_comment_counts,
-
   } from "$lib/esclient";
-
-  import {getKey} from "$lib/getkey";
+  import { getKey } from "$lib/getkey";
 
   export let data;
-  // 从数据中解构需要的字段（带默认值，避免 undefined 错误）
   const { 
     bookId, 
     bookInfo = {}, 
     initialOutline = [], 
     firstChapter = {}, 
     error,
-    userPubkey = null // 假设从数据中获取当前用户公钥
+    userPubkey = null 
   } = data;
 
-  // 页面状态初始化（基于预取数据）
+  // 页面状态
   let currentChapterContent = firstChapter.content || "";
   let globalClickId = firstChapter.id || null;
   let bookAuthor = bookInfo.author || "";
   let bookTitle = bookInfo.title || "";
   let coverImgurl = bookInfo.coverImgurl || "";
 
-  // 点赞和评论状态
+  // 互动状态
   let isLiked = false;
-  let likeCount = 0; // 默认值，便于测试
-  let commentCount = 0; // 默认值，便于测试
+  let likeCount = 0;
+  let commentCount = 0;
   let isCommentPanelOpen = false;
   let newComment = "";
   let comments = [];
-
-
- 
-
+  let showCommentInput = false;
+   
 
   let Keypriv;
   let Keypub;
-
-
   let loaded = false;
-  let mobileMenuOpen = false; // 控制移动端菜单显示状态
+  let mobileMenuOpen = false;
 
-
-  get_book_like_counts(bookId,function(message){
+  // 初始化数据
+  get_book_like_counts(bookId, function(message) {
     if (message.code == 200) likeCount = message.counts;
-  })
+  });
 
-  get_book_comment_counts(bookId,function(message){
+  get_book_comment_counts(bookId, function(message) {
     if (message.code == 200) commentCount = message.counts;
-  })
+  });
    
-  function getTagValue(tags,t) {
+  // 工具函数
+  function getTagValue(tags, t) {
     const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
     return dTag ? dTag[1] : null;
   }
 
-  
+  // 处理章节ID设置
   async function handleSetClickId(item) {
     globalClickId = item.id;
- 
-    if (item.type === 'folder')
-      return;
+    if (item.type === 'folder') return;
+    
     currentChapterContent = "";
     const tocContainer = document.getElementById('right-toc');
     if (tocContainer) {
-        tocContainer.innerHTML=""
+      tocContainer.innerHTML = "";
     }
     
-    // 在移动设备上选择章节后自动关闭菜单
     if (window.innerWidth <= 768) {
       mobileMenuOpen = false;
     }
   }
 
+  // 获取来源参数
   function getFrom() {
-      let url;
-      url = new URL(window.location.href);
-      let value = url.searchParams.get('from');
-      return value;
+    const url = new URL(window.location.href);
+    return url.searchParams.get('from');
   }
 
+  // 处理章节选择
   async function handleChapterSelect(item) {
     console.log('选中章节:', item);
     const response = await fetch(`/viewbooks/${bookId}/${item.id}.md`);
-    let text = await response.text();
+    const text = await response.text();
     currentChapterContent = text;
     
-    // 在移动设备上选择章节后自动关闭菜单
     if (window.innerWidth <= 768) {
       mobileMenuOpen = false;
     }
   }
 
+  // 查找第一个章节节点
   function findFirstChapterNode(items) {
     for (const item of items) {
       if (item.type === 'chapter' && item.id) {
@@ -122,6 +114,7 @@
     return null;
   }
 
+  // 加载章节内容
   async function loadChapterContent(chapterId) {
     await get_chapter(bookId, chapterId, (message) => {
       if (message !== "EOSE" && message.data) {
@@ -130,75 +123,101 @@
     });
   }
 
-  // 点赞相关函数
+  // 处理点赞
   async function handleLike() {
     if (!Keypriv) {
       alert("请先登录再进行点赞操作");
       return;
     }
 
-    // 切换点赞状态
+    // 显示遮罩
+   
     isLiked = !isLiked;
     likeCount = isLiked ? likeCount + 1 : likeCount - 1;
     
-    like_book(bookId,Keypub,Keypriv,function(message){
-       if (message.code == 200)  isLiked = message.liked;
-    })
+    like_book(bookId, Keypub, Keypriv, function(message) {
+      if (message.code == 200) {
+        isLiked = message.liked;
+      }
+      // 延迟隐藏遮罩，给动画留出时间
+      
+    });
   }
 
- 
-
+  // 加载评论
   async function loadComments() {
     if (!bookId) return;
 
     let commentList = [];
-
-    get_book_comments(bookId,function(message){
+    get_book_comments(bookId, function(message) {
       if (message != 'EOSE') {
-        comments = commentList.sort((a, b) => b.created_at - a.created_at);
+        commentList.push(message);
+        comments = [...commentList].sort((a, b) => 
+          (b.servertimestamp || 0) - (a.servertimestamp || 0)
+        );
       }
-      commentList.push(message)
-    })
-
-    // 按时间排序
-    
+    });
   }
 
+  // 处理添加评论
   async function handleAddComment() {
     if (!Keypub) {
       alert("请先登录再进行评论");
       return;
     }
 
-    if (!newComment.trim()) return;
+    const commentText = newComment.trim();
+    if (!commentText) return;
 
-    comment_book(bookId,Keypub,Keypriv,newComment,function(message){
-      console.log(message)
-    })
-    await loadComments(); // 重新加载评论
+    comment_book(bookId, Keypub, Keypriv, commentText, function(message) {
+      console.log(message);
+    });
+    
+    await loadComments();
+    newComment = "";
+    showCommentInput = false; // 提交后隐藏评论框
+     
   }
 
+  // 评论输入框键盘事件处理
+  function handleCommentKeydown(e) {
+    // 检查是否是Enter键且没有按住Shift
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // 阻止默认换行行为
+      
+      // 只有当评论内容不为空时才提交
+      if (newComment.trim()) {
+        handleAddComment();  // 提交评论
+      }
+    }
+  }
+
+  // 切换评论面板显示状态
+  function toggleComment() {
+    showCommentInput = !showCommentInput;
+     
+  }
+
+  // 页面挂载时执行
   onMount(async () => {
     loaded = true;
- 
-    let Key = getKey();
-    
+    const Key = getKey();
     Keypriv = Key.Keypriv;
     Keypub = Key.Keypub;
 
-    if (Keypub ){
-      get_book_like(bookId,Keypub,function(message){
-        if (message != 'EOSE') isLiked = getTagValue(message.tags,'liked');
-      })
-    } 
+    if (Keypub) {
+      get_book_like(bookId, Keypub, function(message) {
+        if (message != 'EOSE') {
+          isLiked = getTagValue(message.tags, 'liked');
+        }
+      });
+    }
 
     loadComments();
 
-    // 窗口大小改变时仅重新计算评论面板位置
     window.addEventListener('resize', () => {
-      // 如果评论面板打开，重新居中
       if (isCommentPanelOpen) {
-        positionCommentPanel();
+        // 可添加重新定位逻辑
       }
     });
   });
@@ -209,10 +228,17 @@
       mobileMenuOpen = false;
     }
   }
+
+  // 点击评论遮罩关闭评论框
+  function closeCommentOnBackdrop(e) {
+    if (e.target.classList.contains('comment-input-backdrop')) {
+      showCommentInput = false;
+    }
+  }
 </script>
 
 <style>
-  :global{
+  :global {
     /* 基础布局样式 */
     .book-view-container {
       display: flex;
@@ -220,6 +246,25 @@
       width: 100%;
       background: linear-gradient(135deg, #f0f4f8 0%, #e6e9f0 100%);
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    /* 全局交互遮罩层 - 覆盖整个页面 */
+    .interactive-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6); /* 更深的透明度，增强遮掩效果 */
+      z-index: 50; /* 介于背景内容和交互控件之间 */
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    .interactive-backdrop.visible {
+      opacity: 1;
+      pointer-events: auto;
     }
 
     /* 侧边栏样式 */
@@ -239,15 +284,15 @@
 
     /* 书籍信息卡片样式 */
     .book-meta {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 16px;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(12px);
-        margin-bottom: 2rem;
-        position: relative;
-        padding: 0.8rem 1.2rem;
-        border-top: 2px solid rgba(102, 16, 242, 0.5);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 5px 10px -5px rgba(0, 0, 0, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      margin-bottom: 2rem;
+      position: relative;
+      padding: 0.8rem 1.2rem;
+      border-top: 2px solid rgba(102, 16, 242, 0.5);
     }
 
     /* 书籍标题与作者样式 */
@@ -270,23 +315,23 @@
     }
 
     .author-dot {
-        width: 16px;
-        height: 16px;
-        background: linear-gradient(135deg, #8b5cf6, #ec4899);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
+      width: 16px;
+      height: 16px;
+      background: linear-gradient(135deg, #8b5cf6, #ec4899);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     
     .author-dot::after {
-        content: '';
-        width: 10px;
-        height: 10px;
-        background: white;
-        border-radius: 50%;
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
     }
+
     /* 书籍统计信息 */
     .book-stats {
       display: flex;
@@ -395,10 +440,11 @@
     /* 右侧内容区样式 */
     .book-content {
       flex: 1;
-      padding: 2rem;
+      padding: 2rem 3rem;
       overflow-y: auto;
       background-color: #ffffff;
       position: relative;
+      height: 100vh;
     }
 
     .no-selection, .no-content {
@@ -412,43 +458,20 @@
       padding: 2rem;
     }
 
-    /* 加载状态样式 */
-    .loading-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(255, 255, 255, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-
-    .loading-spinner {
-      font-size: 1.2rem;
-      color: #374151;
-      padding: 1rem 2rem;
-      border-radius: 8px;
-      background-color: white;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-
     /* 右侧 TOC 容器样式 */
     .right-toc-container {
       width: 280px;
       background: rgba(255, 255, 255, 0.95);
       border-left: 1px solid rgba(0, 0, 0, 0.05);
       padding: 1.8rem 0;
-      padding-left:1rem;
+      padding-left: 1rem;
       overflow-y: auto;
       box-shadow: -2px 0 15px rgba(0, 0, 0, 0.03);
       backdrop-filter: blur(10px);
       z-index: 9;
     }
 
-    /* TOC 标题样式 */
+    /* TOC 样式 */
     .toc-container::before {
       content: '章节导航';
       display: block;
@@ -471,7 +494,6 @@
       border-right: 3px solid transparent;
     }
 
-    /* 每个目录项 */
     .toc-item {
       margin: 6px 0;
       transition: all 0.2s ease;
@@ -479,7 +501,6 @@
       border-radius: 4px;
     }
 
-    /* 鼠标悬停效果 */
     .toc-item:hover {
       color: #1D4ED8;
       background-color: rgba(59, 130, 246, 0.1);
@@ -493,7 +514,7 @@
       border-right: 3px solid #4F46E5;
     }
 
-    /* 多级标题缩进优化 */
+    /* 多级标题缩进 */
     .lv1 .toc-link {
       font-weight: 500;
       padding-left: 1.2rem;
@@ -515,40 +536,7 @@
       display: none;
     }
 
-    /* 调整主布局适配 TOC */
-    .book-view-container {
-      gap: 0;
-    }
-
-    .book-content {
-      flex: 1;
-      padding: 2rem 3rem;
-    }
-
-    /* 主容器确保占满全屏高度 */
-    .book-view-container {
-      display: flex;
-      min-height: 100vh;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* 左侧大纲容器：固定高度 + 内部滚动 */
-    .book-sidebar {
-      height: 100vh;
-      padding: 1.8rem;
-      overflow-y: auto;
-    }
-
-    /* 中间内容区：固定高度 + 独立滚动 */
-    .book-content {
-      flex: 1;
-      height: 100vh;
-      overflow-y: auto;
-      padding: 2rem 3rem;
-      scrollbar-width: thin;
-    }
-
+    /* 内容区样式 */
     .book-content blockquote {
       border-left: 4px solid #4f46e5;
       padding: 1rem 1.5rem;
@@ -558,7 +546,7 @@
       border-radius: 0 6px 6px 0;
     }
 
-    /* 美化滚动条 */
+    /* 滚动条美化 */
     .book-sidebar::-webkit-scrollbar,
     .right-toc-container::-webkit-scrollbar,
     .book-content::-webkit-scrollbar {
@@ -578,13 +566,12 @@
       background-color: transparent;
     }
 
-    /* 返回首页按钮容器 */
+    /* 返回按钮 */
     .back-home-container {
       margin-bottom: -1rem;
       padding: 0 0.5rem;
     }
 
-    /* 返回首页按钮样式 */
     .back-home-btn {
       display: inline-flex;
       align-items: center;
@@ -600,7 +587,6 @@
       box-shadow: 0 2px 5px rgba(79, 70, 229, 0.2);
     }
 
-    /* 按钮交互效果 */
     .back-home-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
@@ -612,7 +598,7 @@
       box-shadow: 0 2px 3px rgba(79, 70, 229, 0.2);
     }
 
-    /* 移动端菜单按钮 */
+    /* 移动端菜单 */
     .mobile-menu-btn {
       display: none;
       position: fixed;
@@ -630,7 +616,6 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     }
 
-    /* 移动端侧边栏 */
     .mobile-sidebar {
       display: none;
       position: fixed;
@@ -640,7 +625,6 @@
       height: 100%;
       background: white;
       z-index: 1000;
-      
       transform: translateX(-100%);
       transition: transform 0.3s ease;
       overflow-y: auto;
@@ -661,7 +645,6 @@
       pointer-events: none;
     }
 
-    /* 移动端菜单打开时的状态 */
     .mobile-sidebar.open {
       transform: translateX(0);
     }
@@ -679,7 +662,7 @@
       
       .book-content {
         padding: 1rem;
-        padding-top: 4rem; /* 为顶部菜单按钮留出空间 */
+        padding-top: 4rem;
       }
       
       .mobile-menu-btn {
@@ -695,7 +678,6 @@
         display: none;
       }
       
-      /* 在移动端隐藏书籍信息 */
       .mobile-sidebar .book-meta {
         display: none;
       }
@@ -705,14 +687,13 @@
       }
     }
 
-    /* 中等屏幕调整 TOC 宽度 */
     @media (min-width: 1200px) and (max-width: 1440px) {
       .right-toc-container {
         width: 240px;
       }
     }
 
-    /* link */
+    /* 隐藏的链接列表 */
     .outline1-links {
       position: absolute;
       left: -9999px;
@@ -724,7 +705,6 @@
       pointer-events: none;
     }
 
-    /* 确保链接结构清晰 */
     .outline1-links-list {
       list-style: none;
       padding: 0;
@@ -740,12 +720,16 @@
       text-decoration: none;
     }
 
+    .interactive-wrapper{
+      position: sticky;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    /* 交互控件 */
     .interactive-controls {
-      position: absolute; /* 相对于最近的定位父元素 */
-      right: 20px; /* 距离父元素右侧20px */
-      bottom: 20px; /* 距离父元素底部20px */
-      
-      /* 保留其他原有样式 */
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -754,15 +738,17 @@
       border-radius: 12px;
       padding: 0.5rem 0.6rem;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-      z-index: 50;
       transition: all 0.2s ease;
       border: 1px solid rgba(226, 232, 240, 0.8);
       backdrop-filter: blur(10px);
       height: 40px;
       box-sizing: border-box;
+      margin-left: auto;
+      width: fit-content;
+      margin-right: 20px;
+       
     }
 
-    /* 交互项样式 */
     .interact-item {
       display: flex;
       align-items: center;
@@ -777,12 +763,11 @@
       background: rgba(248, 250, 252, 0.8);
     }
 
-    /* 点赞项样式 */
+    /* 点赞样式 */
     .like-item {
       color: #64748b;
     }
 
-   
     .like-item.liked {
       color: #ef4444;
     }
@@ -791,7 +776,7 @@
       animation: heartBeat 0.5s ease;
     }
 
-    /* 评论项样式 */
+    /* 评论样式 */
     .comment-item-control {
       color: #64748b;
     }
@@ -800,7 +785,6 @@
       color: #3b82f6;
     }
 
-    /* 图标样式 */
     .interact-icon {
       font-size: 1.2rem;
       transition: transform 0.2s ease;
@@ -810,7 +794,6 @@
       transform: scale(1.1);
     }
 
-    /* 数字样式 - 放在图标旁边 */
     .interact-count {
       font-size: 0.9rem;
       font-weight: 600;
@@ -826,206 +809,278 @@
       color: #3b82f6;
     }
 
-    /* 分隔线 */
-    .interact-divider {
-      width: 1px;
-      height: 20px;
-      background: rgba(226, 232, 240, 0.8);
+    /* 评论框背景遮罩 - 已合并到全局遮罩 */
+    .comment-input-backdrop {
+      display: none;
     }
 
-    /* 评论面板样式 */
-    .comment-panel {
-      position: fixed;
-      width: 320px;
-      background: rgba(255,255,255,0.98);
-      border-radius: 12px;
-      border: 1px solid rgba(2, 6, 23, 0.06);
-      box-shadow: 0 24px 48px rgba(2, 6, 23, 0.18);
-      padding: 1.1rem;
-      max-height: 420px;
+    /* 评论容器样式 */
+    .comment-container {
+      position: relative;
       display: flex;
-      flex-direction: column;
-      transform: scale(0.95);
-      opacity: 0;
-      pointer-events: none;
-      transition: transform 0.28s cubic-bezier(.2,.8,.2,1), opacity .22s ease;
-      z-index: 100;
-      backdrop-filter: blur(8px);
-    }
-
-    .comment-panel.open {
-      transform: scale(1);
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    /* 评论面板遮罩 */
-    .comment-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 99;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-    }
-
-    .comment-backdrop.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .comment-header {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
-      padding-bottom: 0.6rem;
-      border-bottom: 1px solid #f1f5f9;
     }
-
-    .comment-title {
-      font-weight: 600;
-      color: #0f172a;
-      font-size: 1rem;
-      letter-spacing: .2px;
-    }
-
-    .close-comment {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      cursor: pointer;
-      font-size: 1.1rem;
-      border-radius: 8px;
-      padding: 2px 6px;
-      transition: background-color .15s ease, color .15s ease, transform .12s ease;
-    }
-
-    .close-comment:hover {
-      background: #f8fafc;
-      color: #64748b;
-    }
-
-    .close-comment:active {
-      transform: scale(0.96);
-    }
-
-    .comments-list {
-      flex: 1;
-      overflow-y: auto;
-      margin-bottom: 0.8rem;
-      padding-right: 2px;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(148,163,184,.6) transparent;
-    }
-
-    .comments-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    .comments-list::-webkit-scrollbar-thumb {
-      background: rgba(148,163,184,.6);
-      border-radius: 999px;
-    }
-    .comments-list::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    .comment-item {
-      padding: 0.65rem 0;
-      border-bottom: 1px dashed #eef2f7;
-      transition: background-color .15s ease;
-    }
-
-    .comment-item:hover {
-      background: rgba(248, 250, 252, 0.6);
-    }
-
-    .comment-author {
-      font-size: 0.86rem;
-      font-weight: 600;
-      color: #4F46E5;
-      margin-bottom: 0.2rem;
-      display: inline-flex;
-      align-items: baseline;
-      gap: .4rem;
-    }
-
-    .comment-time {
-      font-size: 0.72rem;
-      color: #94a3b8;
-    }
-
-    .comment-content {
-      font-size: 0.92rem;
-      color: #334155;
-      line-height: 1.55;
-    }
-
-    .comment-input-container {
+    
+    /* 评论输入框样式 */
+    .comment-input-wrapper {
       display: flex;
-      gap: 0.5rem;
-      align-items: flex-end;
+      width: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    }
+    
+    .comment-input-wrapper.visible {
+      opacity: 1;
+      pointer-events: auto;
+      width: 480px;
+      
+    }
+    
+    /* 渐变边框容器样式 */
+    .gradient-border-container {
+      position: relative;
+      padding: 2px; /* 扩大背景区域 */
+      border-radius: 16px;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      width: auto;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      right:0px;
+      display: inline-block; /* 使容器根据内容宽度自适应 */
+    }
+
+    .gradient-border-container.visible {
+      max-width: calc(100% - 40px);
+      opacity: 1;
+      pointer-events: auto;
+      right:0px;
+    }
+
+    .gradient-border-container::before,
+    .gradient-border-container::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border-radius: 18px;
+        z-index: 0;
+        pointer-events: none;
+    }
+    
+    .gradient-border-container::before {
+        background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+        z-index: -1;
+    }
+    
+    .gradient-border-container::after {
+        top: -4px;
+        left: -4px;
+        right: -4px;
+        bottom: -4px;
+        background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+        z-index: -2;
+    }
+        
+    
+    .comment-input-container {
+      position: relative;
+      width: 100%;
     }
 
     .comment-input {
-      flex: 1;
-      padding: 0.6rem 0.75rem;
+      width: 100%;
+      padding: 0.8rem;
+      padding-right: 70px; /* 为按钮预留空间 */
       border: 1px solid #e2e8f0;
       border-radius: 10px;
       font-size: 0.92rem;
       resize: none;
-      min-height: 48px;
-      background: #f8fafc;
-      transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+      min-height: 80px;
+      background: #ffffff; /* 纯白色背景 */
+      transition: border-color .15s ease, box-shadow .15s ease;
+      box-sizing: border-box;
+      box-shadow: 
+        0 1px 2px rgba(0,0,0,0.03);
     }
-
-    .comment-input::placeholder {
-      color: #9aa3b2;
-    }
-
+    
     .comment-input:focus {
       outline: none;
-      background: #ffffff;
       border-color: #8B5CF6;
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+      box-shadow: 
+        0 0 0 2px rgba(139, 92, 246, 0.1);
     }
-
+ 
+    .comment-actions {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      display: flex;
+      gap: 8px;
+    }
+    
+    .cancel-comment, .send-comment {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%; /* 确保圆形 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      padding: 0px; /* 移除内边距确保圆形 */
+      flex-shrink: 0; /* 防止按钮尺寸变化 */
+      margin-bottom:4px;
+    }
+    
+    .cancel-comment {
+      background-color: #f1f5f9;
+      color: #64748b;
+    }
+    
+    .cancel-comment:hover {
+      background-color: #e2e8f0;
+      color: #334155;
+    }
+    
     .send-comment {
       background: linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%);
       color: white;
-      border: none;
-      border-radius: 10px;
-      padding: 0 0.9rem;
-      height: 40px;
-      min-width: 44px;
-      cursor: pointer;
-      font-weight: 500;
-      transition: transform .14s ease, box-shadow .18s ease, background .18s ease, opacity .18s ease;
-      box-shadow: 0 10px 18px rgba(79, 70, 229, 0.22);
-      display: inline-flex;
+    }
+    
+    .send-comment:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+    }
+    
+    /* 修复图标居中问题 */
+    .send-comment i, .cancel-comment i {
+      display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    .send-comment:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 14px 26px rgba(79, 70, 229, 0.28);
+    /* 内容与评论区隔离条 */
+    .content-divider {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin: 2.5rem 0 1.5rem;
+      padding: 0 0.5rem;
+    }
+    
+    .divider-line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.3), transparent);
+    }
+    
+    .divider-text {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      white-space: nowrap;
+      padding: 0.3rem 0.8rem;
+      background-color: rgba(248, 250, 252, 0.8);
+      border-radius: 12px;
+      letter-spacing: 0.5px;
     }
 
-    .send-comment:active {
-      transform: translateY(0) scale(0.98);
-      box-shadow: 0 8px 16px rgba(79, 70, 229, 0.18);
+    /* 评论列表 */
+    .comments-list {
+      margin-bottom: 0.8rem;
+      padding: 0.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,.6) transparent;
+      border-radius: 10px;
+      background-color: #fcfcfd;
+    }
+
+    .comments-list-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .comment-item {
+      padding: 0.9rem;
+      border-radius: 12px;
+      background-color: white;
+      border: 1px solid #f1f5f9;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      transition: all 0.2s ease;
+    }
+
+    .comment-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      border-color: #e2e8f0;
+    }
+
+    .comment-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .comment-author-avatar {
+      margin-left: 8px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .comment-meta {
+      flex: 1;
+    }
+
+    .comment-author-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 0.9rem;
+    }
+
+    .comment-time {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .comment-content {
+      font-size: 0.95rem;
+      color: #334155;
+      line-height: 1.6;
+      padding-left: 43px;
     }
 
     .no-comments {
       color: #94a3b8;
       font-size: 0.9rem;
       text-align: center;
-      padding: 0.8rem 0;
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      background-color: #fcfcfd;
+      border-radius: 10px;
+      border: 1px dashed #e2e8f0;
+    }
+
+    .no-comments i {
+      font-size: 1.8rem;
+      color: #cbd5e1;
     }
 
     /* 动画效果 */
@@ -1039,27 +1094,14 @@
 
     /* 小屏适配 */
     @media (max-width: 520px) {
-      .comment-panel {
-        width: calc(100% - 2rem);
-        max-height: 60vh;
+      .comment-input-wrapper.visible{
+        width:260px;
       }
       
       .interactive-controls {
         padding: 0.2rem 0.2rem;
         height: 38px;
         gap: 0.6rem;
-      }
-      
-      .interact-item {
-        padding: 0.2rem 0.2rem;
-      }
-      
-      .interact-icon {
-        font-size: 1.1rem;
-      }
-      
-      .interact-count {
-        font-size: 0.85rem;
       }
     }
   }
@@ -1071,6 +1113,8 @@
 
 <!-- 页面主容器 -->
 <div class="book-view-container">
+ 
+
   <!-- 移动端菜单按钮 -->
   <button class="mobile-menu-btn" on:click={() => mobileMenuOpen = !mobileMenuOpen}>
     <i class="fas fa-bars"></i>
@@ -1080,7 +1124,7 @@
   <div class="mobile-sidebar-backdrop {mobileMenuOpen ? 'open' : ''}" 
        on:click={closeMenuOnBackdrop}></div>
 
-  <!-- 移动端侧边栏 - 不包含书籍信息 -->
+  <!-- 移动端侧边栏 -->
   <aside class="mobile-sidebar {mobileMenuOpen ? 'open' : ''}">
     <div class="back-home-container">
       <button class="back-home-btn" on:click={() => history.back()}>
@@ -1119,7 +1163,6 @@
           <span class="text-purple-600 text-lg">《</span>
           {bookTitle}
           <span class="text-purple-600 text-lg">》</span>
-          <span class="inline-block w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 mt-1.5 rounded-0 group-hover:w-full-1/2 transition-all duration-300"></span>
         </h1>
         
         <!-- 作者信息 -->
@@ -1128,7 +1171,6 @@
           <span class="text-gray-500">作者:</span>
           <span class="font-medium text-gray-700 relative group">
             {bookAuthor}
-            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-purple-400 group-hover:w-full transition-all duration-300"></span>
           </span>
         </p>
         
@@ -1144,9 +1186,6 @@
             <span>共 <span class="font-medium text-purple-600">{initialOutline.length}</span> 个章节</span>
           </div>
         {/if}
-        
-        <!-- 角落装饰 -->
-        <div class="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-purple-100 rounded-tr"></div>
       </div>
     </div>
     
@@ -1172,7 +1211,7 @@
     </div>
   </aside>
   
-  <!-- 右侧内容区 - Markdown内容 -->
+  <!-- 右侧内容区 -->
   <main class="book-content">
     {#if currentChapterContent && loaded}
       <ViewMD mdcontent={currentChapterContent} />
@@ -1186,88 +1225,112 @@
       </div>
     {/if}
 
+    <!-- 评论区与正文的隔离条 -->
+    <div class="content-divider">
+      <div class="divider-line"></div>
+      <div class="divider-text">评论区</div>
+      <div class="divider-line"></div>
+    </div>
 
     <div class="comments-list">
       {#if comments.length > 0}
-        {#each comments as comment}
-          <div class="comment-item">
-            <div class="comment-author">
-              {comment.author}
-              <span class="comment-time">
-                {comment.servertimestamp 
-                  ? new Date(comment.servertimestamp).toLocaleDateString('zh-CN', {
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric'
-                    })
-                  : '未知日期'
-                }
-              </span>
+        <div class="comments-list-inner">
+          {#each comments as comment}
+            <div class="comment-item">
+              <!-- 评论头部：作者和时间 -->
+              <div class="comment-header">
+                <div class="comment-author-avatar">
+                  <span>{comment.author ? comment.author.charAt(0).toUpperCase() : 'U'}</span>
+                </div>
+                <div class="comment-meta">
+                  <div class="comment-author-name">{comment.author || '匿名用户'}</div>
+                  <div class="comment-time">
+                    {comment.servertimestamp 
+                      ? new Date(comment.servertimestamp).toLocaleDateString('zh-CN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : '未知时间'
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 评论内容 -->
+              <div class="comment-content">
+                {comment.data}
+              </div>
             </div>
-            <div class="comment-content">{comment.data}</div>
-          </div>
-        {/each}
+          {/each}
+        </div>
       {:else}
-        <div class="no-comments">暂无评论，快来抢沙发~</div>
+        <div class="no-comments">
+          <i class="fa fa-comment-o"></i>
+          <p>暂无评论，快来抢沙发~</p>
+        </div>
       {/if}
     </div>
 
-    <!-- 交互控件容器（已移除拖动事件） -->
-    <div 
-      id="interactive-controls"
-      class="interactive-controls" >
-      <!-- 点赞项 -->
-      <div 
-        class="interact-item like-item {isLiked ? 'liked' : ''}"
-        on:click={handleLike}
-        title={isLiked ? "取消点赞" : "点赞"}
-      >
-        <i class="fa {isLiked ? 'fa-heart' : 'fa-heart-o'} interact-icon"></i>
-        <span class="interact-count">{likeCount}</span>
+    <!-- 交互控件容器 -->
+    <div class="interactive-wrapper">
+      <div class="gradient-border-container {showCommentInput ? 'visible' : ''}">
+        <div class="comment-input-wrapper {showCommentInput ? 'visible' : ''}">
+          <div class="comment-input-container">
+            <textarea 
+              class="comment-input" 
+              placeholder="写下你的评论..."
+              bind:value={newComment}
+              on:keydown={handleCommentKeydown}
+              on:focus={() => {}}
+            ></textarea>
+            <div class="comment-actions">
+              <button class="cancel-comment" on:click={toggleComment}>
+                <i class="fa fa-times"></i>
+              </button>
+              <button class="send-comment" on:click={handleAddComment} disabled={!newComment.trim()}>
+                <i class="fa fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- 评论项 -->
-      <div 
-        class="interact-item comment-item-control {isCommentPanelOpen ? 'active' : ''}"
-        on:click={handleCommentToggle}
-        title="评论"
-      >
-        <i class="fa fa-comment-o interact-icon"></i>
-        <span class="interact-count">{commentCount}</span>
+      {#if !showCommentInput}
+      <div class="interactive-controls">
+        <!-- 点赞按钮 -->
+        <div 
+          class="interact-item like-item {isLiked ? 'liked' : ''}"
+          on:click={handleLike}
+          title={isLiked ? "取消点赞" : "点赞"}
+        >
+          <i class="fa {isLiked ? 'fa-heart' : 'fa-heart-o'} interact-icon"></i>
+          <span class="interact-count">{likeCount}</span>
+        </div>
+
+        <!-- 评论按钮及输入框容器 -->
+        <div class="comment-container">
+          <!-- 评论按钮 -->
+          <div 
+            class="interact-item comment-item-control {showCommentInput ? 'active' : ''}"
+            on:click={toggleComment}
+            title="评论"
+          >
+            <i class="fa fa-comment-o interact-icon"></i>
+            <span class="interact-count">{commentCount}</span>
+          </div>
+        </div>
       </div>
+     {/if} 
     </div>
-
   </main>
 
   <!-- 右侧 TOC 容器 -->
   <aside class="right-toc-container" id="right-toc">
     <!-- TOC 内容将由 ViewMD 生成并插入 -->
   </aside>
-
-  <!-- 评论面板遮罩 -->
-  <div class="comment-backdrop {isCommentPanelOpen ? 'open' : ''}" on:click={handleCommentToggle}></div>
-
-  
-  <!-- 评论面板 - 居中显示 -->
-  <div class="comment-panel {isCommentPanelOpen ? 'open' : ''}">
-    <div class="comment-header">
-      <h3 class="comment-title">章节评论</h3>
- 
-    </div>
-
-
-    <div class="comment-input-container">
-      <textarea 
-        class="comment-input" 
-        placeholder="写下你的评论..."
-        bind:value={newComment}
-        on:keydown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAddComment())}
-      ></textarea>
-      <button class="send-comment" on:click={handleAddComment}>
-        <i class="fa fa-paper-plane"></i>
-      </button>
-    </div>
-  </div>
 </div>
 
 <div class="outline1-links" aria-hidden="true">
