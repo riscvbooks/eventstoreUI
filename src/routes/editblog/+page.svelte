@@ -45,6 +45,12 @@
     console.log("保存成功的博客数据：", blog);
     blogId = blog.id
     await loadBlogs(currentPage); // 刷新当前页
+    await blog_counts(Keypub, message => {
+      if (message.code == 200) {
+        blogTotalCount = message.counts;
+        totalPages =  Math.ceil(blogTotalCount / pageSize) || 1;
+      }
+    });
   }
 
   // 加载指定页的博客数据
@@ -98,7 +104,7 @@
       let Id = url.searchParams.get('blogid');
       
       blogId = Id;
-      
+
       return Id; // 如果不存在会返回null
   }
  
