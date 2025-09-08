@@ -70,10 +70,32 @@
     emailInput = '';
   };
 
+  function strToArray(hexStr){
+    const uint8Array = [];
+
+    for (let i = 0; i < hexStr.length; i += 2) {
+      const hexUnit = hexStr.slice(i, i + 2); // 提取2个字符（如"14"、"2c"）
+      const uint8Val = parseInt(hexUnit, 16); // 十六进制转十进制（0-255）
+      uint8Array.push(uint8Val);
+    }
+    
+    return new Uint8Array(uint8Array)
+  }
   const LoginorCreate = ()=>{
     console.log(privateKeyInput);
 
     privateKeyInput = privateKeyInput.replace(/\s/g, '')
+    if (!privateKeyInput.startsWith('esec1')){
+      try {
+        const hexpriv = strToArray(privateKeyInput);
+        privateKeyInput = esecEncode(hexpriv);
+
+      } catch {
+        return alert('无效的私钥格式');
+      }
+
+    }
+
     if (!privateKeyInput.startsWith('esec1') || privateKeyInput.length < 48) {
         return alert('无效的私钥格式');
     }
@@ -104,9 +126,15 @@
 
  
       let storage = new WebStorage(localStorage);
-      Keypriv = esecDecode(privateKeyInput)['data']
+      try {
+        Keypriv = esecDecode(privateKeyInput)['data']
+        Keypub = getPublicKey(Keypriv)
+      } catch {
+        return alert('无效的私钥格式');
+      }
+    
         
-      Keypub = getPublicKey(Keypriv) 
+ 
       storage.set("keyPriv", Keypriv);
       showToastMessage("登录成功！")
       setTimeout(() => {
