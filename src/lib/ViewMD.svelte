@@ -279,8 +279,21 @@ window.copyCode = copyCode;
  
   }
 
+:global(.vp-doc h2) {
+  
+}
 
+:global(
+  .vp-doc h1,
+  .vp-doc h2,
+  .vp-doc h3,
+  .vp-doc h4,
+  .vp-doc h5,
+  .vp-doc h6
+) {
+  display: table;
+  width: auto;  
+}
 
- 
 </style>
     

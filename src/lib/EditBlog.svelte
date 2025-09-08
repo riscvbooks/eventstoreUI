@@ -169,7 +169,7 @@
         'preview', 'side-by-side', 'fullscreen',insertImageButton, '|',
         'guide'
       ],
-      initialValue: blogData.content || `# 欢迎使用创作中心\n\n在这里开始撰写您的博客...`
+      initialValue: blogData.content 
     });
   }
 
