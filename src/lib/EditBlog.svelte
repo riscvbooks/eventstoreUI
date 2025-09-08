@@ -288,6 +288,7 @@
       
       if (message.code === 200) {
         showNotification(isPublish ? "文章发布成功" : "草稿保存成功", 2000, "success");
+        blogData.id = blogId;
         onSaveSuccess(blogData);
       } else {
         showNotification("保存失败", 2000, "error");

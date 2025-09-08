@@ -48,6 +48,8 @@
       // 从查询参数中获取bookid（searchParams是处理URL查询参数的API）
       let value = url.searchParams.get('from');
       
+      if (value == null) value = '/creator'
+
       return value; // 如果不存在会返回null
   }
 

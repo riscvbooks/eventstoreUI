@@ -43,6 +43,7 @@
   // 保存成功后刷新当前页数据
   async function handleSaveSuccess(blog) {
     console.log("保存成功的博客数据：", blog);
+    blogId = blog.id
     await loadBlogs(currentPage); // 刷新当前页
   }
 
@@ -90,10 +91,13 @@
   function getBlogId( ) {
       let url;
       // 处理传入的URL或使用当前页面URL
-    
+      if (blogId) return blogId;
+
       url = new URL(window.location.href);
    
       let Id = url.searchParams.get('blogid');
+      
+      blogId = Id;
       
       return Id; // 如果不存在会返回null
   }
