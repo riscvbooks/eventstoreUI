@@ -12,51 +12,155 @@
   let isTransitioning = false;
 
   // 轮播内容数据（与你原始内容一致）
-  const slideData = [
+const slideData = [
     {
-      title: "Rust 内核模块代码",
+      title: "RISC-V 汇编基础示例",
       type: "code",
-      content: `// Rust内核模块初始化
-use kernel::prelude::*;
+      content: `# RISC-V 基础指令示例
+# 计算斐波那契数列
 
-module! {
-    type: MyKernelModule,
-    name: "sys_demo",
-    license: "GPL",
-}
+.text
+.globl fib
+fib:
+    # 输入: a0 = n
+    # 输出: a0 = fib(n)
+    li t0, 1
+    blt a0, t0, fib_base   # if n < 1, 跳转到基础情况
+    
+    addi sp, sp, -12       # 分配栈空间
+    sw ra, 8(sp)           # 保存返回地址
+    sw a0, 4(sp)           # 保存 n
+    
+    addi a0, a0, -1        # n-1
+    call fib               # fib(n-1)
+    sw a0, 0(sp)           # 保存 fib(n-1)
+    
+    lw a0, 4(sp)           # 恢复 n
+    addi a0, a0, -2        # n-2
+    call fib               # fib(n-2)
+    
+    lw t0, 0(sp)           # 恢复 fib(n-1)
+    add a0, t0, a0         # fib(n-1) + fib(n-2)
+    
+    lw ra, 8(sp)           # 恢复返回地址
+    addi sp, sp, 12        # 释放栈空间
+    ret
 
-impl KernelModule for MyKernelModule {
-    fn init() -> Result<Self> {
-        pr_info!("Rust内核模块初始化完成\\n");
-        Ok(Self)
-    }
-}`
+fib_base:
+    mv a0, zero            # fib(0) = 0
+    ret`
     },
     {
-      title: "内核架构可视化",
+      title: "RISC-V 处理器架构",
       type: "architecture",
       nodes: [
-        { title: "进程调度器", desc: "Process Scheduler", icon: "📊", top: "60px", left: "60px" },
-        { title: "内存管理",   desc: "Memory Allocation",  icon: "💾", top: "60px", left: "240px" },
-        { title: "I/O 控制器", desc: "Input/Output",       icon: "🔌", top: "160px", left: "150px" }
+        { title: "指令取指", desc: "Instruction Fetch", icon: "📥", top: "60px", left: "60px" },
+        { title: "指令译码", desc: "Instruction Decode", icon: "🔍", top: "60px", left: "200px" },
+        { title: "执行单元", desc: "Execution Unit", icon: "⚡", top: "160px", left: "130px" },
+        { title: "内存访问", desc: "Memory Access", icon: "💾", top: "160px", left: "270px" },
+        { title: "写回", desc: "Write Back", icon: "📤", top: "260px", left: "200px" }
       ],
       connections: [
-        { top: "100px", left: "150px", width: "100px", rotation: "0deg" },
-        { top: "160px", left: "150px", width: "80px",  rotation: "30deg" },
-        { top: "160px", left: "250px", width: "80px",  rotation: "-30deg" }
+        { top: "100px", left: "120px", width: "80px", rotation: "0deg" },
+        { top: "100px", left: "200px", width: "80px", rotation: "0deg" },
+        { top: "160px", left: "170px", width: "60px", rotation: "45deg" },
+        { top: "160px", left: "230px", width: "60px", rotation: "-45deg" },
+        { top: "220px", left: "200px", width: "80px", rotation: "0deg" }
       ]
     },
     {
-      title: "系统终端输出",
+      title: "RISC-V 开发环境",
       type: "terminal",
       commands: [
-        { prompt: "$", command: "make kernel_module" },
-        { output: "[INFO] 编译内核模块...",    type: "info" },
-        { output: "[SUCCESS] 模块编译完成",    type: "success" },
-        { prompt: "$", command: "insmod sys_demo.ko" },
-        { prompt: "$", command: "dmesg | grep Rust" },
-        { output: "[1234.567] Rust内核模块初始化完成" },
-        { prompt: "$[ChenLongOS]", cursor: true }
+        { prompt: "$", command: "riscv64-unknown-elf-gcc -o hello hello.c" },
+        { output: "[INFO] 编译 RISC-V 程序...", type: "info" },
+        { prompt: "$", command: "file hello" },
+        { output: "hello: ELF 64-bit LSB executable, UCB RISC-V, version 1 (SYSV), statically linked, not stripped" },
+        { prompt: "$", command: "qemu-riscv64 hello" },
+        { output: "Hello, RISC-V World!" },
+        { output: "[SUCCESS] 程序在 RISC-V 模拟器中运行成功", type: "success" },
+        { prompt: "$[RISC-V-Books]", cursor: true }
+      ]
+    },
+    {
+      title: "RISC-V 特权架构配置",
+      type: "code",
+      content: `# RISC-V 机器模式配置示例
+# 设置异常处理和中断
+
+.section .text.init
+.global _start
+_start:
+    # 设置栈指针
+    la sp, _stack_end
+    
+    # 配置机器模式异常处理
+    la t0, trap_handler
+    csrw mtvec, t0
+    
+    # 启用机器模式中断
+    li t0, 0x888           # 启用软件、定时器、外部中断
+    csrw mie, t0
+    li t0, 0x8             # 全局中断使能
+    csrw mstatus, t0
+    
+    # 设置定时器中断
+    li t0, 1000000         # 1秒间隔
+    csrw mtimecmp, t0
+    
+    # 跳转到主程序
+    call main
+    
+trap_handler:
+    # 保存寄存器
+    addi sp, sp, -32
+    sw ra, 0(sp)
+    sw t0, 4(sp)
+    
+    # 检查异常原因
+    csrr t0, mcause
+    bgez t0, handle_exception   # 如果是异常
+    
+handle_interrupt:
+    # 处理中断
+    andi t0, t0, 0x7FF
+    li t1, 7                    # 机器模式定时器中断
+    beq t0, t1, timer_interrupt
+    
+handle_exception:
+    # 处理异常...
+    
+timer_interrupt:
+    # 处理定时器中断
+    li t0, 1000000
+    add t0, t0, t0
+    csrw mtimecmp, t0           # 设置下一个中断
+    
+    # 恢复寄存器并返回
+    lw ra, 0(sp)
+    lw t0, 4(sp)
+    addi sp, sp, 32
+    mret`
+    },
+    {
+      title: "RISC-V 书籍学习路径",
+      type: "architecture", 
+      nodes: [
+        { title: "基础指令集", desc: "RV32I/RV64I", icon: "📖", top: "40px", left: "60px" },
+        { title: "扩展指令", desc: "M/A/F/D/C", icon: "🔧", top: "40px", left: "200px" },
+        { title: "特权架构", desc: "M/S/U模式", icon: "🛡️", top: "120px", left: "130px" },
+        { title: "内存管理", desc: "MMU/页表", icon: "💾", top: "200px", left: "60px" },
+        { title: "系统开发", desc: "OS/驱动", icon: "⚙️", top: "200px", left: "200px" },
+        { title: "实践项目", desc: "芯片设计", icon: "🚀", top: "280px", left: "130px" }
+      ],
+      connections: [
+        { top: "80px", left: "120px", width: "80px", rotation: "0deg" },
+        { top: "120px", left: "150px", width: "40px", rotation: "45deg" },
+        { top: "120px", left: "180px", width: "40px", rotation: "-45deg" },
+        { top: "160px", left: "100px", width: "60px", rotation: "45deg" },
+        { top: "160px", left: "160px", width: "60px", rotation: "-45deg" },
+        { top: "240px", left: "100px", width: "60px", rotation: "-45deg" },
+        { top: "240px", left: "160px", width: "60px", rotation: "45deg" }
       ]
     }
   ];
