@@ -140,6 +140,12 @@
 
           <!-- 右侧操作区 -->
           <div class="flex items-center space-x-4">
+
+            <a href="/creator" class="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800 transition-colors duration-200 flex items-center space-x-1">
+              <i class="fa fa-edit text-sm"></i>
+              <span class="text-sm hidden sm:inline">创作中心</span>
+            </a>
+
             <button id="search-btn" class="p-2 rounded-full hover:bg-gray-800 transition-colors duration-200">
               <i class="fa fa-search text-gray-400"></i>
             </button>

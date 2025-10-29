@@ -249,7 +249,7 @@
 </style>
 
 <svelte:head>
-    <title>esbook - 创作空间</title>
+    <title>RISC-V - 创作空间</title>
 </svelte:head>
 
 <!-- 页面内容 -->

@@ -20,8 +20,8 @@
   let avatarImgData = '';
   let isAvatarContainerActive = false; 
   let username = "";  
-  let title = "前端开发";  
-  let bio = "我是   , 一位热爱技术和写作的开发者。\n专注于前端开发和用户体验设计，\n喜欢分享知识和经验。";
+  let title = "芯片设计";  
+  let bio = "我是   , 一位热爱技术和写作的开发者。\n专注RISC-V芯片设计，\n喜欢分享知识和经验。";
 
   let user_profile;
   let showMoreHint = true; // 控制"下面还有信息"提示的显示状态
@@ -187,8 +187,11 @@
           showNotification('所有设置已保存');
           // 保存成功后显示"下面还有信息"提示
           showMoreHint = true;
-          // 5秒后自动隐藏提示（可选）
-          setTimeout(() => showMoreHint = false, 5000);
+          // 2秒后自动隐藏提示（可选）
+         setTimeout(() => {
+          window.location.reload();
+          }, 2000);
+
         } else {
           showNotification(message.message);
         }
@@ -221,6 +224,9 @@
     }
   }
 </script>
+<svelte:head>
+    <title>RISC-V - 个人信息</title>
+</svelte:head>
 
 <!-- 页面设置 -->
 <div class="mt-8 bg-white rounded-xl shadow-sm overflow-hidden">
