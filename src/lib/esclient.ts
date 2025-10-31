@@ -23,6 +23,23 @@ function getId(tempEvent){
   return hashMessage(JSON.stringify(tempEvent))
 }
 
+export async function get_event(eventid,showLogs=0,callback){
+  await client.connect().catch(error => {});
+
+  let event = {    
+      "ops": "R",
+      "code": 203,
+      showLogs:showLogs,
+      eventid,
+    }
+    
+    client.subscribe( event ,function(message){
+       
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      else callback(message[2])
+    });      
+}
+
 export async function create_user(email,pubkey,privkey,callback){
     await client.connect().catch(error => {});
 
@@ -76,6 +93,41 @@ export async function get_users(offset,limit,callback){
       });      
 }
 
+
+export async function get_user_by_email(email,callback){
+  await client.connect().catch(error => {});
+
+  let event = {    
+      "ops": "R",
+      "code": 103,
+      email      
+    }
+    client.subscribe(event,function(message){
+       
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+     
+      callback(message[2])
+ 
+      
+    });      
+}
+
+export async function get_user_by_pubkeys(pubkeys,callback){
+  await client.connect().catch(error => {});
+
+  let event = {    
+      "ops": "R",
+      "code": 103,
+      "data":{"pubkeys":pubkeys}      
+    }
+    client.subscribe(event,function(message){
+       
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      
+      callback(message[2])
+       
+    });      
+}
 
 export async function get_permissions(pubkeys,callback){
     await client.connect().catch(error => {});
@@ -181,6 +233,7 @@ export async function create_book(bookInfo,pubkey,privkey,callback){
     }
   
   if (bookInfo.labels) event.labels = bookInfo.labels;
+  if (bookInfo.coAuthors) event.coAuthors = bookInfo.coAuthors;
 
   let sevent = secureEvent(event,privkey);
 
@@ -223,7 +276,8 @@ export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
       "data": bookInfo,
       "tags":[ ['t','create_book'],['web','esbook'],['d',bookid]]
     }
-  if (bookInfo.labels) event.labels = bookInfo.labels;  
+  if (bookInfo.labels) event.labels = bookInfo.labels; 
+  if (bookInfo.coAuthors) event.coAuthors = bookInfo.coAuthors; 
   
   let sevent = secureEvent(event,privkey);
  
@@ -278,6 +332,53 @@ export async function get_book_id(bookid,callback){
     }); 
 }
 
+export async function get_book_shortid(s_userid,s_bookid,callback){
+  
+  await client.connect().catch(error => {});
+  
+
+  let event = 
+    {
+  
+      "ops": "R",
+      "code": 203,
+      "eventuser": { "$regex": `^${s_userid}` },
+      "tags": 
+          [
+              { $elemMatch: { "0": "d", "1":  { "$regex": `^${s_bookid}` } } },
+              { $elemMatch: { "0": "t", "1": "create_book" } },
+              { $elemMatch: { "0": "web", "1": "esbook" } }
+          ]
+      ,
+    }
+
+  client.subscribe(event,function(message){
+         
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      
+      callback(message[2])
+    }); 
+}
+
+
+
+export async function create_chapter_log(bookId,content,name,pubkey,privkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = {
+  
+      "ops": "C",
+      "code": 200,
+      "user": pubkey,
+      "data": content,
+      "tags":[ ['t','create_chapter_log'],['web','esbook'],['bid',bookId],['n',name]]
+    }
+  let sevent = secureEvent(event,privkey);
+  client.publish(sevent,function(message){
+      callback(message[2]);
+  });  
+}
+
 export async function create_chapter(bookId,content,name,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
@@ -292,8 +393,15 @@ export async function create_chapter(bookId,content,name,pubkey,privkey,callback
   let sevent = secureEvent(event,privkey);
   client.publish(sevent,function(message){
       callback(message[2]);
-  });  
+  }); 
+  
+  await create_chapter_log(bookId,{chapterEventid:sevent.id},name,pubkey,privkey,function(message){
+
+  })
 }
+
+
+
 
 export async function get_chapter(bookId,name,callback){
   await client.connect().catch(error => {});
@@ -307,6 +415,26 @@ export async function get_chapter(bookId,name,callback){
     event.tags.push(['d',bookId+'_'+name])
   }
 
+  
+  client.subscribe(event,function(message){
+         
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
+}
+
+export async function get_chapter_update_logs(bookId,offset=0,limit=10,callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+      "ops": "R",
+      "code": 203,
+      limit,
+      offset,
+      "tags":[ ['t','create_chapter_log'],['web','esbook'],['bid',bookId]],
+    }
+ 
   
   client.subscribe(event,function(message){
          
@@ -566,6 +694,35 @@ export async function get_blog_id(blogid,callback){
       callback(message[2])
     }); 
 }
+
+
+export async function get_blog_shortid(s_userid,s_blogid,callback){
+  
+  await client.connect().catch(error => {});
+  
+
+  let event = 
+    {
+  
+      "ops": "R",
+      "code": 203,
+      "eventuser": { "$regex": `^${s_userid}` },
+      "tags": 
+           [
+              { $elemMatch: { "0": "d", "1":  { "$regex": `^${s_blogid}` } } },
+              { $elemMatch: { "0": "t", "1": "create_blog" } }    
+          ]
+       ,
+    }
+
+  client.subscribe(event,function(message){
+         
+      if (message[2] == "EOSE") client.unsubscribe(message[1]);
+      
+      callback(message[2])
+    }); 
+}
+
 
 export async function get_blogs(pubkey,isDraft=1,offset=0,limit=10,callback){
   

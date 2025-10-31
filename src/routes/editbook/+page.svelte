@@ -3,13 +3,22 @@
   import NestedTree from '$lib/NestedTree.svelte';
   import "$lib/editbook.css";
   
-  import {upload_file,
+  import {
+    get_user_by_email,
+    get_user_by_pubkeys,
+    upload_file,
     create_book,
     update_book,
     create_chapter,
     get_book_id,
+    get_chapter_update_logs,
+    get_event,
     get_chapter} from "$lib/esclient";
-  
+  import {    
+ 
+    epubEncode,
+    epubDecode,
+  } from "eventstore-tools/src/key";
   import {getKey} from "$lib/getkey";
   import {uploadpath} from "$lib/config";
 
@@ -30,7 +39,10 @@
   let coAuthors = []; // 存储联合作者列表
   let showAddCoAuthorInput = false; // 控制添加联合作者输入框
   let newCoAuthor = ""; // 新联合作者输入值
-  let coAuthorRoles = {}; // 存储联合作者角色 {authorId: "角色"}
+ 
+ 
+  let userEmailCache = new Map(); // 缓存用户公钥到邮箱的映射
+
  
   // 大纲的选中id号，用来显示大纲的样式渲染
   let globalClickId = null;
@@ -67,6 +79,14 @@
   // 当前激活的菜单项
   let activeMenu = 'chapterEdit'; // 'bookInfo' 或 'chapterEdit'
 
+  let viewingHistoryChapter = null;
+  
+
+  function getTagValue(tags,t) {
+    const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
+    return dTag ? dTag[1] : null;
+  }
+
   function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -75,57 +95,76 @@
   function isValidPubKey(pubKey) {
     // epub 格式（32字节的十六进制数，bech32编码）
     if (pubKey.startsWith('epub1')) {
-       
-      return pubKey.length === 63 && /^epub1[ac-hj-np-z02-9]+$/.test(pubKey);
+      return epubDecode(pubKey);
     }
     
     // 十六进制格式的 PubKey（64个字符）
     if (/^[0-9a-fA-F]{64}$/.test(pubKey)) {
-      return true;
+      return pubKey;
     }
     
     return false;
   }
 
+  
+
+  function shortenPubkey(pubkey) {
+    if (!pubkey) return "未知用户";
+    if (pubkey.length <= 16) return pubkey;
+    return pubkey.substring(0, 8) + '...' + pubkey.substring(pubkey.length - 8);
+  }
+
+ 
+
   // 添加联合作者
   function addCoAuthor() {
     if (!newCoAuthor.trim()) return;
     
-    // 检查是否已存在
-    if (coAuthors.includes(newCoAuthor.trim())) {
-      showNotification("该联合作者已存在", "error");
-      return;
+    let ret = 0;
+    function cb(e){
+
+      const exists = coAuthors.some(author => author.email === e.email);
+
+      if (exists) {
+        showNotification("该联合作者已存在", "error");
+        return;
+      }
+
+      if (e == "EOSE"){
+        if (ret == 0) showNotification("没找到用户", "error");
+
+        return ;
+      }
+
+      ret = 1;
+
+      coAuthors = [...coAuthors,  
+        {email:e.email,
+        pubkey:e.pubkey}
+      ];
+      // 重置输入
+      newCoAuthor = "";
+      showAddCoAuthorInput = false;
+      showNotification("联合作者添加成功");
+
     }
+    if (isValidEmail(newCoAuthor)){
+      
+      get_user_by_email(newCoAuthor,cb);
     
-    if (!isValidEmail(newCoAuthor) && !isValidPubKey(newCoAuthor)) {
+    } else if (isValidPubKey(newCoAuthor)){
+
+      let pk = isValidPubKey(newCoAuthor);
+      get_user_by_pubkeys([pk],cb);
+
+    }else {
       showNotification("请输入有效的邮箱地址或 PubKey ", "error");
       return;
     }
     
-
-    coAuthors = [...coAuthors, newCoAuthor.trim()];
-    // 初始化角色
-    coAuthorRoles = {
-      ...coAuthorRoles,
-      [newCoAuthor.trim()]: ""
-    };
-    
-    // 重置输入
-    newCoAuthor = "";
-    showAddCoAuthorInput = false;
-    showNotification("联合作者添加成功");
   }
 
-  // 从服务器加载时设置联合作者数据
-  function loadCoAuthorsFromServer(coAuthorsData) {
-    if (coAuthorsData && Array.isArray(coAuthorsData)) {
-      coAuthors = coAuthorsData;
-      // 如果有角色信息，也一并加载
-      if (coAuthorsData.roles) {
-        coAuthorRoles = coAuthorsData.roles;
-      }
-    }
-  }
+ 
 
   let showing = false;
 
@@ -505,15 +544,15 @@
    
     function upload_info(message) {       
         if (message[2].code == 200){
-             
+            const pubkeys = coAuthors.map(a => a.pubkey); 
             let url = message[2].fileUrl;
             let bookInfo = {
                 coverImgurl :url,
                 title:bookTitle,
                 author:bookAuthor,
                 labels:bookLabels,
-                coAuthors: coAuthors, // 添加联合作者
-                coAuthorRoles: coAuthorRoles // 添加角色信息
+                coAuthors: pubkeys, // 添加联合作者
+                
             }
             if (bookId ){
               update_book(bookInfo,bookId,Keypub,Keypriv,function(msg){
@@ -739,6 +778,39 @@
         
   };    
 
+
+
+
+  // 辅助函数：格式化时间戳
+  function formatTimestamp(timestamp) {
+    if (!timestamp) return "未知时间";
+    
+    const date = new Date(timestamp * 1000);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    
+    if (diffMins < 1) return "刚刚";
+    if (diffMins < 60) return `${diffMins} 分钟前`;
+    if (diffHours < 24) return `${diffHours} 小时前`;
+    if (diffDays < 7) return `${diffDays} 天前`;
+    
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  }
+
+  // 辅助函数：截取事件ID显示
+  function shortenEventId(eventId) {
+    if (!eventId) return "";
+    return eventId.substring(0, 8) + "...";
+  }
+
+
   onMount(async () => {
     // 加载CodeMirror库
     let Key = getKey();
@@ -764,11 +836,33 @@
             
           // 加载联合作者数据
           if (message.data.coAuthors) {
-            coAuthors = message.data.coAuthors;
+                function cb_user(e){
+
+                  if (e == "EOSE"){
+                  
+                    return ;
+                  }
+
+                  const exists = coAuthors.some(author => author.email === e.email);
+
+                  if (exists) {
+                    
+                    return;
+                  }
+
+ 
+
+                  coAuthors = [...coAuthors,  
+                    {email:e.email,
+                    pubkey:e.pubkey}
+                  ];
+                }
+
+            get_user_by_pubkeys(message.data.coAuthors,cb_user);
+
+             
           }
-          if (message.data.coAuthorRoles) {
-            coAuthorRoles = message.data.coAuthorRoles;
-          }
+ 
 
           const bookCover = document.querySelector('.book-cover');
                       
@@ -787,7 +881,10 @@
             nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
           }
        });
+ 
     }
+
+
 
     await Promise.all([
       new Promise(resolve => {
@@ -916,16 +1013,7 @@
 
 
 
-    function findChapter(id, items = initialOutline) {
-      for (const item of items) {
-        if (item.id === id) return item;
-        if (item.children) {
-          const found = findChapter(id, item.children);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
+
 
     function updateWordCount(simplemde) {
       const wordCountEl = document.getElementById('wordCount');
@@ -1062,6 +1150,7 @@
                 }
             }
         }
+  
     });
 
  
@@ -1071,8 +1160,33 @@
     };
 
 
+
+
   }); //onMount
 
+  function findChapter(id, items = initialOutline) {
+    for (const item of items) {
+      if (item.id === id) return item;
+      if (item.children) {
+        const found = findChapter(id, item.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
+
+  async function fetchUpdateLogs() {
+      
+      if (!bookId) {
+        showNotification("请先完善书籍信息!", "warning");
+        return;
+      }
+      window.location.href = `/editbook/revisions?bookid=`+bookId;
+      
+  
+    }
+
+ 
   // 当模态框关闭时销毁编辑器
   $: if (!showRawOutlineModal && codeMirrorEditor) {
     destroyCodeMirrorEditor();
@@ -1120,6 +1234,46 @@
     .content-panel {
       transition: all 0.3s ease;
     }
+
+      
+  .history-view-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .merge-button {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .merge-button:hover {
+    background-color: #059669;
+  }
+  
+  .exit-history-button {
+    background-color: #6b7280;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .exit-history-button:hover {
+    background-color: #4b5563;
+  }
+
   }
 </style>
 
@@ -1146,6 +1300,20 @@
             </div>
           </div>
           
+              <div 
+              class="left-menu-item p-3 rounded-lg flex items-center {activeMenu === 'updateLogs' ? 'active' : ''}"
+              on:click={() => {
+                setActiveMenu('updateLogs');
+                fetchUpdateLogs(); // 点击时加载更新日志
+              }}
+            >
+              <i class="fa fa-history mr-3 text-lg"></i>
+              <div>
+                <div class="font-medium">更新日志</div>
+                <div class="text-xs text-gray-500 mt-1">查看章节更新历史</div>
+              </div>
+            </div>
+
         </div>
       </div>
 
@@ -1250,12 +1418,12 @@
                   <!-- 已添加的联合作者 -->
                   {#each coAuthors as coAuthor, index}
                     <div class="coauthor-item flex items-center gap-2 mb-2 p-3 bg-gray-50 rounded-lg">
-                      <span class="flex-1 text-sm font-medium">{coAuthor}</span>
+                      <span class="flex-1 text-sm font-medium">{coAuthor.email}</span>
                       <button 
                         class="text-red-500 hover:text-red-700 text-sm p-1 rounded transition"
                         on:click={() => {
                           coAuthors = coAuthors.filter((_, i) => i !== index);
-                          delete coAuthorRoles[coAuthor];
+                          
                         }}
                       >
                         <i class="fa fa-times"></i>
@@ -1371,6 +1539,7 @@
 
       <!-- 章节内容编辑 -->
       
+ 
       <div class="editor-header" style:display={activeMenu === 'chapterEdit' ? 'block' : 'none'}>
         <div class="flex justify-between items-center">
           <div>
@@ -1385,7 +1554,7 @@
             </button>
             <button class="p-2 text-white hover:bg-white/20 rounded-lg transition" 
                     data-tooltip="保存为草稿">
-              <i class="fa fa-file-excel-o"></i>
+              <i class="fa fa-file-alt"></i>
             </button>
             <button class="p-2 text-white hover:bg-white/20 rounded-lg transition" 
                     data-tooltip="保存" on:click={saveCurrentChapter}>
@@ -1416,12 +1585,9 @@
         </div>
         
       </div>
-       
-    
-    
-
+          
       <!-- 默认状态提示 -->
-      {#if activeMenu !== 'bookInfo' && activeMenu !== 'chapterEdit'}
+      {#if activeMenu !== 'bookInfo' && activeMenu !== 'chapterEdit' && activeMenu !== 'updateLogs' }
         <div class="content-panel flex-grow flex items-center justify-center bg-white rounded-lg shadow">
           <div class="text-center text-gray-500">
             <i class="fa fa-book-open text-5xl mb-4 opacity-50"></i>

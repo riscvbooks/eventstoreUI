@@ -34,7 +34,14 @@
 
  
 
- 
+  function getShortBookId(book) {
+    return `${book.user.substring(0, 8)}-${book.id.substring(0, 8)}`;
+  }
+  
+  function getShortBlogId(blog) {
+    return `${blog.user.substring(0, 8)}-${blog.id.substring(0, 8)}`;
+  }
+  
 
   onMount(() => {
     // 导航栏滚动效果
@@ -317,14 +324,14 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {#each displayedBooks as book}
-            <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col" on:click={goTobook(book.id)}>
+            <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col" on:click={goTobook(getShortBookId(book))}>
               <!-- 4:3比例图片 -->
               <div class="relative" style="padding-top: 100%;">  
                 <img src={uploadpath + book.data.coverImgurl} alt={book.data.title} class="absolute inset-0 w-full h-full object-cover">
               </div>
               <div class="p-5">
                 <h3 class="font-semibold text-lg mb-3">{book.data.title}</h3>
-                <a href="/viewbooks/{book.id}"></a>
+                <a href="/viewbooks/{getShortBookId(book)}"></a>
                 <div class="flex flex-wrap gap-2 mb-4">
                   {#each book.labels as label}
                     <span class="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
@@ -477,7 +484,7 @@
                   
                   <div class="flex-1">
                     <h3 class="font-semibold text-lg mb-2 hover:text-blue-600 transition-colors duration-200">
-                      <a href="/viewblog?blogid={blog.id}">{blog.data.title}</a>
+                      <a href="/viewblog?blogid={getShortBlogId(blog)}">{blog.data.title}</a>
                     </h3>
                     <div class="flex items-center text-sm text-gray-500 mb-1">
                       <span class="flex items-center mr-3">
@@ -505,7 +512,7 @@
                     <span class="text-sm text-gray-700">{users_profile[blog.user].data.displayName}</span>
                   </div>
                   {/if}
-                  <a href="/viewblog?blogid={blog.id}" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center">
+                  <a href="/viewblog?blogid={getShortBlogId(blog)}" class="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center">
                     阅读全文
                     <i class="fa fa-angle-right ml-1"></i>
                   </a>

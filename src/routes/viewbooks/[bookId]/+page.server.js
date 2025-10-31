@@ -1,21 +1,48 @@
-import { get_book_id, get_chapter } from "$lib/esclient";
+import { get_book_id, get_book_shortid,get_chapter } from "$lib/esclient";
 import {createRenderer} from "$lib/render";
 
 let md;
+let rawbookId=null;
+
+
+function getTagValue(tags,t) {
+  const dTag = tags.find(tag => Array.isArray(tag) && tag[0] === t);
+  return dTag ? dTag[1] : null;
+}
+
 // 工具函数：将回调式API转换为Promise
-function getBookIdPromise(bookId) {
+
+function getBookIdPromise(s_userid,s_bookid) {
   return new Promise((resolve, reject) => {
-    get_book_id(bookId, (message) => {
+    if (rawbookId){
+      get_book_id(rawbookId, (message) => {
       
-      if (message === "EOSE") {
-        reject(new Error("未找到书籍信息"));
-      } else if (message) {
-         
-        resolve(message);
-      } else {
-        reject(new Error("获取书籍信息失败"));
-      }
-    });
+        if (message === "EOSE") {
+          reject(new Error("未找到书籍信息"));
+        } else if (message) {
+           
+          resolve(message);
+        } else {
+          reject(new Error("获取书籍信息失败"));
+        }
+      });
+  
+    } else {
+      
+      get_book_shortid(s_userid,s_bookid, (message) => {
+      
+        if (message === "EOSE") {
+          reject(new Error("未找到书籍信息"));
+        } else if (message) {
+           
+          resolve(message);
+        } else {
+          reject(new Error("获取书籍信息失败"));
+        }
+      });
+    }
+
+
   });
 }
 
@@ -72,14 +99,28 @@ function addLinkToItems(items, bookId) {
 export async function load({ params }) {
   try {
     const { bookId } = params;
+    let s_userid=null,s_bookid=null;
+
+     
+    if (bookId.includes('-')) {
+       [s_userid, s_bookid] = bookId.split('-');
+    }  else {
+      rawbookId = bookId;
+    }
 
     md = await createRenderer();
     // 1. 并行预取书籍基本信息和大纲
-    const [bookInfo, outlineData] = await Promise.all([
-      getBookIdPromise(bookId),
-      getChapterPromise(bookId, "outline.md",false)
+ 
+    const [bookInfo]   = await Promise.all([
+      getBookIdPromise( s_userid,s_bookid),
+      
     ]);
 
+    rawbookId = getTagValue(bookInfo.tags,'d');
+
+    const[outlineData] = await Promise.all([
+      getChapterPromise(rawbookId, "outline.md",false)
+    ]);
     // 2. 解析大纲
     let initialOutline = [];
     if (outlineData?.data) {
@@ -105,7 +146,7 @@ export async function load({ params }) {
     // const fromParam = request.url.searchParams.get('from') || null;
 
     return {
-      bookId,
+      bookId:rawbookId,
       bookInfo: {
         author: bookInfo.data.author,
         title: bookInfo.data.title,

@@ -143,33 +143,43 @@
 
       <ul>
         <li>
-          <a href="/" class="active-tab flex items-center px-4 py-3">
-            <i class="fas fa-home w-5 text-center mr-3"></i>
+          <a href="/" class="flex items-center px-4 py-3 text-gray-700 hover:bg-sky-50">
+            <i class="fas fa-home w-5 text-center mr-3 text-sky-500"></i>
             <span>主页</span>
-          </a>
-        </li>
-        <li>
-          <a href="/editblog" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-blog w-5 text-center mr-3"></i>
-            <span>博客管理</span>
-            <span class="ml-auto bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">{blogTotalCount}</span>
-          </a>
-        </li>
-        <li>
-          <a href="/editbook" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-book w-5 text-center mr-3"></i>
-            <span>书籍管理</span>
-            <span class="ml-auto bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">{bookTotalCount}</span>
           </a>
         </li>
 
         <li>
-          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50">
-            <i class="fas fa-chart-line w-5 text-center mr-3"></i>
+          <a href="/creator" class="flex items-center px-4 py-3 text-gray-700 hover:bg-indigo-50">
+            <i class="fas fa-pen-nib w-5 text-center mr-3 text-indigo-500"></i>
+            <span>创作中心</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="/editblog" class="flex items-center px-4 py-3 text-gray-700 hover:bg-emerald-50">
+            <i class="fas fa-blog w-5 text-center mr-3 text-emerald-500"></i>
+            <span>博客管理</span>
+            <span class="ml-auto bg-emerald-100 text-emerald-800 text-xs px-2 py-0.5 rounded-full">{blogTotalCount}</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="/editbook" class="flex items-center px-4 py-3 text-gray-700 hover:bg-amber-50">
+            <i class="fas fa-book w-5 text-center mr-3 text-amber-500"></i>
+            <span>书籍管理</span>
+            <span class="ml-auto bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">{bookTotalCount}</span>
+          </a>
+        </li>
+
+        <li>
+          <a href="#" class="flex items-center px-4 py-3 text-gray-700 hover:bg-rose-50">
+            <i class="fas fa-chart-line w-5 text-center mr-3 text-rose-500"></i>
             <span>数据统计</span>
           </a>
         </li>
       </ul>
+
 
       <div class="px-4 mt-8 mb-4">
         <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">创作工具</p>

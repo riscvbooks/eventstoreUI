@@ -25,6 +25,8 @@
   export let data;
   const { blogId, blogData, userProfile, error } = data;
 
+  
+
   let Keypriv;
   let Keypub;
 
