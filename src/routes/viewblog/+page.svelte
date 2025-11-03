@@ -757,7 +757,7 @@
 </style>
 
 <svelte:head>
-  <title>esbook - {blogData.title || "博客文章"}</title>
+  <title>RISCVBooks - {blogData.title || "博客文章"}</title>
 </svelte:head>
 
 <!-- 主布局容器 -->
