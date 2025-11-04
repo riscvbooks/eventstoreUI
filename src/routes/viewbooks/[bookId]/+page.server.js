@@ -99,8 +99,8 @@ function addLinkToItems(items, bookId) {
 export async function load({ params }) {
   try {
     const { bookId } = params;
-    let s_userid=null,s_bookid=null;
-
+    let s_userid = null,s_bookid = null;
+    rawbookId = null;
      
     if (bookId.includes('-')) {
        [s_userid, s_bookid] = bookId.split('-');
@@ -117,7 +117,6 @@ export async function load({ params }) {
     ]);
 
     rawbookId = getTagValue(bookInfo.tags,'d');
-
     const[outlineData] = await Promise.all([
       getChapterPromise(rawbookId, "outline.md",false)
     ]);
@@ -132,7 +131,7 @@ export async function load({ params }) {
     let firstChapterContent = null;
     const firstChapter = findFirstChapterNode(initialOutline);
     if (firstChapter) {
-      const chapterData = await getChapterPromise(bookId, firstChapter.id,true);
+      const chapterData = await getChapterPromise(rawbookId, firstChapter.id,true);
       if (chapterData?.data){
         chapterData.data = await md.render(chapterData.data);
       }
