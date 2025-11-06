@@ -59,7 +59,7 @@
 </style>
 
 <svelte:head>
-  <title>RiscvBooks 资料中心 - RISC-V技术博客  </title>
+  <title>RISCVBooks 资料中心 - RISC-V技术博客  </title>
 </svelte:head>
 
 
@@ -139,7 +139,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
         <div>
           <a href="/" class="inline-block mb-4">
-            <span class="text-white text-2xl font-bold">RiscvBooks<span class="text-blue-400">资料中心</span></span>
+            <span class="text-white text-2xl font-bold">RISCVBooks<span class="text-blue-400">资料中心</span></span>
           </a>
           <p class="text-gray-400 mb-6">专注于RISC-V架构、芯片设计与系统软件开发的专业文档资源平台，助力开发者深入技术核心。</p>
           <div class="flex space-x-4">
@@ -186,7 +186,7 @@
       </div>
       <div class="border-t border-gray-800 pt-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
-          <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2025 RiscvBooks 资料中心. 保留所有权利。</p>
+          <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2025 RISCVBooks 资料中心. 保留所有权利。</p>
           <div class="flex space-x-6">
             <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">隐私政策</a>
             <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">使用条款</a>
