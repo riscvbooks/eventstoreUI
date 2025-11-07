@@ -1382,7 +1382,7 @@
                 书籍封面
               </h2>
               <div class="flex flex-col items-center">
-                <div class="w-64 h-80 mb-4" id="bookCoverContainer"   on:mouseenter={handlebookCoverMouseEnter}
+                <div class="w-80 h-80 mb-4" id="bookCoverContainer"   on:mouseenter={handlebookCoverMouseEnter}
                   on:mouseleave={handlebookCoverMouseLeave} >
                   <div class="book-cover bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl w-full h-full flex flex-col items-center justify-center text-white p-6 text-center shadow-xl cursor-pointer">
                     <h3 class="text-xl font-bold mb-2">点击上传封面</h3>
@@ -1390,7 +1390,7 @@
                   </div>
                 </div>  
                 
-                <div class="w-64">
+                <div class="w-80">
                   <label class="w-full bg-gray-100 hover:bg-gray-200 px-4 py-2.5 rounded-lg cursor-pointer transition flex items-center justify-center btn-hover text-sm">
                     <i class="fa fa-upload mr-2"></i>选择图片文件
                     <input type="file" class="hidden" id="coverInputfile" on:change={handleCoverFileSelect}>
