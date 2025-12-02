@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
 
-  import {uploadpath} from "$lib/config";
+  import {uploadpath,siteConfig} from "$lib/config";
   import {get_books,get_blogs,get_users_profile} from "$lib/esclient";
   import Carousel from "$lib/Carousel.svelte";
  
@@ -120,7 +120,7 @@
 
 
 <svelte:head>
-  <title>RISCVBooks 资料中心 - RISC-V架构与芯片开发技术资源</title>
+  <title>{siteConfig.name}- RISC-V架构与芯片开发技术资源</title>
 </svelte:head>
 
 <main class="font-inter bg-gray-50 text-gray-900 antialiased">
@@ -640,7 +640,7 @@
           <ul class="space-y-3">
             <li class="flex items-start">
               <i class="fa fa-envelope mt-1 mr-3 text-gray-400"></i>
-              <span class="text-gray-400">contact@riscvbooks.com</span>
+              <span class="text-gray-400">{siteConfig.contact}</span>
             </li>
             <li class="flex items-start">
               <i class="fab fa-github mt-1 mr-3 text-gray-400"></i>
@@ -648,14 +648,15 @@
             </li>
             <li class="flex items-start">
               <i class="fa fa-globe mt-1 mr-3 text-gray-400"></i>
-              <span class="text-gray-400">https://riscvbooks.com</span>
+              <span class="text-gray-400">{siteConfig.domain} </span>
             </li>
           </ul>
         </div>
       </div>
       <div class="border-t border-gray-800 pt-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
-          <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2025 RISCVBooks 资料中心. 保留所有权利。</p>
+          <p class="text-gray-400 text-sm mb-4 md:mb-0">© 2025 {siteConfig.name}. 保留所有权利。</p>
+          <p class="text-gray-400 text-sm mb-4 md:mb-0 s-y_bCXRrkrYfP"><a href="https://beian.miit.gov.cn/" target="_blank" >{siteConfig.beian}</a></p>
           <div class="flex space-x-6">
             <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">隐私政策</a>
             <a href="#" class="text-gray-400 hover:text-white text-sm transition-colors duration-200">使用条款</a>
