@@ -1185,17 +1185,27 @@
   
   <!-- 右侧内容区 -->
   <main class="book-content">
-    {#if currentChapterContent && loaded}
-      <ViewMD mdcontent={currentChapterContent} />
-    {:else if initialOutline.length > 0}
-      <div class="no-selection">
-        <p>作者正在快速赶工中，耐心等待...</p>
-      </div>
-    {:else}
-      <div class="no-content">
-        <p>本书暂无内容</p>
-      </div>
-    {/if}
+      {#if !loaded}
+          <!-- 状态1: 正在加载章节内容 -->
+          <div class="loading">
+              
+              <div class="border-4 border-blue-200 border-t-blue-600 rounded-full w-8 h-8 animate-spin mx-auto"></div>
+              <p>章节内容加载中...</p>
+          </div>
+      {:else if currentChapterContent}
+          
+          <ViewMD mdcontent={currentChapterContent} />
+      {:else if initialOutline.length > 0}
+           
+          <div class="no-selection">
+              <p>作者正在快速赶工中，耐心等待...</p>
+          </div>
+      {:else}
+           
+          <div class="no-content">
+              <p>本书暂无内容</p>
+          </div>
+      {/if}
 
     <!-- 评论区与正文的隔离条 -->
     <div class="content-divider">
