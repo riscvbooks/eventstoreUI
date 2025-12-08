@@ -295,13 +295,13 @@
           content: message.data,
           eventId: message.id,
           chapterEventid:message.data.chapterEventid,
-          author: message.pubkey,
+          author: message.user,
           authorEmail: "加载中..."
         };
         
         updateLogs = [...updateLogs, logEntry];
         
-        await getUserEmail(message.pubkey, (email) => {
+        await getUserEmail(message.user, (email) => {
           updateLogs = updateLogs.map(log => 
             log.eventId === message.id ? { ...log, authorEmail: email } : log
           );
