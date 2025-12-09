@@ -874,7 +874,7 @@
         }
        })
 
-       await get_chapter(bookId,"outline.md",bookAuthor,function(message){
+       await get_chapter_author(bookId,"outline.md",bookAuthor,function(message){
            if (message != "EOSE"){
              
             initialOutline = JSON.parse(message.data)
