@@ -1,4 +1,4 @@
-import { get_book_id, get_book_shortid,get_chapter } from "$lib/esclient";
+import { get_book_id, get_book_shortid,get_chapter_author } from "$lib/esclient";
 import {createRenderer} from "$lib/render";
 
 let md;
@@ -46,9 +46,9 @@ function getBookIdPromise(s_userid,s_bookid) {
   });
 }
 
-function getChapterPromise(bookId, chapterId,isMD) {
+function getChapterPromise(bookId, chapterId,author_pubkey,isMD) {
   return new Promise((resolve, reject) => {
-    get_chapter(bookId, chapterId, async (message) => {
+    get_chapter_author(bookId, chapterId, author_pubkey,async (message) => {
       if (message === "EOSE") {
         resolve(null); // 没有更多数据
       } else if (message) {
@@ -118,7 +118,7 @@ export async function load({ params }) {
 
     rawbookId = getTagValue(bookInfo.tags,'d');
     const[outlineData] = await Promise.all([
-      getChapterPromise(rawbookId, "outline.md",false)
+      getChapterPromise(rawbookId, "outline.md",bookInfo.user,false)
     ]);
     // 2. 解析大纲
     let initialOutline = [];
@@ -131,7 +131,7 @@ export async function load({ params }) {
     let firstChapterContent = null;
     const firstChapter = findFirstChapterNode(initialOutline);
     if (firstChapter) {
-      const chapterData = await getChapterPromise(rawbookId, firstChapter.id,true);
+      const chapterData = await getChapterPromise(rawbookId, firstChapter.id,bookInfo.user,true);
       if (chapterData?.data){
         chapterData.data = await md.render(chapterData.data);
       }

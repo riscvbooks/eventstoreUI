@@ -13,7 +13,7 @@
     get_book_id,
     get_chapter_update_logs,
     get_event,
-    get_chapter} from "$lib/esclient";
+    get_chapter_author} from "$lib/esclient";
   import {    
  
     epubEncode,
@@ -286,7 +286,7 @@
     simplemde.value("");
      
     setTimeout(() => {  isUnsaved = false; }, 100);
-    get_chapter(bookId,item.id,function(message){
+    get_chapter(bookId,item.id,bookAuthor,function(message){
            if (message != "EOSE"){     
                  
             simplemde.value (message.data);
@@ -874,7 +874,7 @@
         }
        })
 
-       await get_chapter(bookId,"outline.md",function(message){
+       await get_chapter(bookId,"outline.md",bookAuthor,function(message){
            if (message != "EOSE"){
              
             initialOutline = JSON.parse(message.data)

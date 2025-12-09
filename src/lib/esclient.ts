@@ -424,6 +424,28 @@ export async function get_chapter(bookId,name,callback){
   });  
 }
 
+export async function get_chapter_author(bookId,name,author_pubkey,callback){
+  await client.connect().catch(error => {});
+
+  let event = { 
+      "ops": "R",
+      "user": author_pubkey,
+      "code": 203,
+      "tags":[ ['t','create_chapter'],['web','esbook'],['bid',bookId]]
+    }
+  if (name){
+    event.tags.push(['d',bookId+'_'+name])
+  }
+
+  
+  client.subscribe(event,function(message){
+         
+    if (message[2] == "EOSE") client.unsubscribe(message[1]);
+    
+    callback(message[2])
+  });  
+}
+
 export async function get_chapter_update_logs(bookId,offset=0,limit=10,callback){
   await client.connect().catch(error => {});
 

@@ -9,7 +9,7 @@
     update_book,
     create_chapter,
     get_book_id,
-    get_chapter,
+    get_chapter_author,
     like_book,
     comment_book,
     get_book_like,
@@ -116,7 +116,7 @@
 
   // 加载章节内容
   async function loadChapterContent(chapterId) {
-    await get_chapter(bookId, chapterId, (message) => {
+    await get_chapter_author(bookId, chapterId,bookAuthor, (message) => {
       if (message !== "EOSE" && message.data) {
         currentChapterContent = message.data;
       }  
