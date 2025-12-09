@@ -286,7 +286,7 @@
     simplemde.value("");
      
     setTimeout(() => {  isUnsaved = false; }, 100);
-    get_chapter(bookId,item.id,bookAuthor,function(message){
+    get_chapter_author(bookId,item.id,bookAuthor,function(message){
            if (message != "EOSE"){     
                  
             simplemde.value (message.data);
