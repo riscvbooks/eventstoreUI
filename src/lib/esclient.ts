@@ -268,7 +268,7 @@ function get_book_id(bookid,callback);
 export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
-  get_book_id(bookid,function(msg){
+  get_book_id(bookid,async function(msg){
 
     if (msg == "EOSE") return ;
 
