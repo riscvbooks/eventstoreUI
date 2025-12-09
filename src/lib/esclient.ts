@@ -443,7 +443,7 @@ export async function get_chapter_author(bookId,name,author_pubkey,callback){
 
   let event = { 
       "ops": "R",
-      "user": author_pubkey,
+      "eventuser": author_pubkey,
       "code": 203,
       "tags":[ ['t','create_chapter'],['web','esbook'],['bid',bookId]]
     }
