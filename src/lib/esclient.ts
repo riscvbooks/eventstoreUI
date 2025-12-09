@@ -263,27 +263,41 @@ export async function book_counts(pubkey,callback){
   });  
 }
 
+function get_book_id(bookid,callback);
+
 export async function update_book(bookInfo,bookid,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
-  await delete_event(bookid,pubkey,privkey,function(e){});
+  get_book_id(bookid,function(msg){
 
-  let event = {
-  
-      "ops": "C",
-      "code": 200,
-      "user": pubkey,
-      "data": bookInfo,
-      "tags":[ ['t','create_book'],['web','esbook'],['d',bookid]]
+    if (msg == "EOSE") return ;
+
+    if (msg.user != pubkey){
+      callback({"code":403,"message":"只有原作者才有权限修改"});
     }
-  if (bookInfo.labels) event.labels = bookInfo.labels; 
-  if (bookInfo.coAuthors) event.coAuthors = bookInfo.coAuthors; 
-  
-  let sevent = secureEvent(event,privkey);
- 
-  client.publish(sevent,function(message){
-      callback(message[2]);
-  });  
+
+    await delete_event(bookid,pubkey,privkey,function(e){});
+
+    let event = {
+    
+        "ops": "C",
+        "code": 200,
+        "user": pubkey,
+        "data": bookInfo,
+        "tags":[ ['t','create_book'],['web','esbook'],['d',bookid]]
+      }
+    if (bookInfo.labels) event.labels = bookInfo.labels; 
+    if (bookInfo.coAuthors) event.coAuthors = bookInfo.coAuthors; 
+    
+    let sevent = secureEvent(event,privkey);
+   
+    client.publish(sevent,function(message){
+        callback(message[2]);
+    });  
+
+  }) 
+
+
 }
 
 export async function get_books(pubkey,offset=0,limit=10,callback){

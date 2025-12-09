@@ -34,6 +34,7 @@
   let bookAuthor = '';
   let coverImgurl='';
   let bookId = "";
+  let author_pubkey = "";
  
   // 联合作者相关状态
   let coAuthors = []; // 存储联合作者列表
@@ -286,7 +287,7 @@
     simplemde.value("");
      
     setTimeout(() => {  isUnsaved = false; }, 100);
-    get_chapter_author(bookId,item.id,bookAuthor,function(message){
+    get_chapter_author(bookId,item.id,author_pubkey,function(message){
            if (message != "EOSE"){     
                  
             simplemde.value (message.data);
@@ -567,6 +568,19 @@
                       confirmcallback = "";
                       showConfirmModal = false;
                     } 
+
+                    if (msg.code == 403){
+                      confirmMessage = msg.message;
+                      showConfirmModal = true; // 显示自定义模态框
+                      confirmcallback = function(result){
+                      if (result){
+                          window.location.reload();
+                      }
+                      confirmcallback = "";
+                      showConfirmModal = false;
+                    } 
+
+                    }
                   }
               })
             } else {
@@ -827,9 +841,11 @@
        await get_book_id(bookId,function(message){
         if (message != "EOSE"){
            
-          bookAuthor = message.data.author;
-          bookTitle = message.data.title;
-          coverImgurl = message.data.coverImgurl;
+          bookAuthor    = message.data.author;
+          bookTitle     = message.data.title;
+          coverImgurl   = message.data.coverImgurl;
+          author_pubkey = message.user;
+
           if (message.data.labels){
             bookLabels  = message.data.labels;
           }
@@ -874,7 +890,7 @@
         }
        })
 
-       await get_chapter_author(bookId,"outline.md",bookAuthor,function(message){
+       await get_chapter_author(bookId,"outline.md",author_pubkey,function(message){
            if (message != "EOSE"){
              
             initialOutline = JSON.parse(message.data)
