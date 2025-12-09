@@ -32,9 +32,10 @@
   // 页面状态
   let currentChapterContent = firstChapter.content || "";
   let globalClickId = firstChapter.id || null;
-  let bookAuthor = bookInfo.author || "";
-  let bookTitle = bookInfo.title || "";
-  let coverImgurl = bookInfo.coverImgurl || "";
+  let bookAuthor    = bookInfo.author || "";
+  let author_pubkey = bookInfo.user || "";
+  let bookTitle     = bookInfo.title || "";
+  let coverImgurl   = bookInfo.coverImgurl || "";
 
   // 互动状态
   let isLiked = false;
@@ -116,7 +117,7 @@
 
   // 加载章节内容
   async function loadChapterContent(chapterId) {
-    await get_chapter_author(bookId, chapterId,bookAuthor, (message) => {
+    await get_chapter_author(bookId, chapterId,author_pubkey, (message) => {
       if (message !== "EOSE" && message.data) {
         currentChapterContent = message.data;
       }  
