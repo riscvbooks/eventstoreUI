@@ -234,6 +234,7 @@ window.copyCode = copyCode;
     box-sizing: border-box;
     /* max-height: calc(100vh - 8rem);  控制最大高度（视口高度 - 预留空间） */
     background-color: #ffffff;
+    min-height:500px;
   }
  
 
