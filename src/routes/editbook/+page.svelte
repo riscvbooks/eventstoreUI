@@ -987,6 +987,61 @@
                 className: 'fa fa-camera',
                 title: '上传图片'
             };
+
+
+      const uploadFileButton = {
+          name: 'uploadFile',
+          action: function (editor) {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.md,.zip,.rar,.7z,.tgz,.mp3,.mp4';
+              input.multiple = false;
+              
+              input.addEventListener('change', async (event) => {
+                  const file = event.target.files[0];
+                  if (!file) return;
+                  
+                  // 显示简单的上传提示
+                  const cm = editor.codemirror;
+                  const cursor = cm.getCursor();
+                  cm.replaceRange(`[上传中...]`, cursor);
+                  
+                  // 创建文件读取器
+                  const reader = new FileReader();
+                  
+                  // 读取完成后处理
+                  reader.onload = function(e) {
+                      const arrayBuffer = e.target.result;
+                      const uint8Array = new Uint8Array(arrayBuffer);
+                      
+                      // 调用上传函数
+                      upload_file(file.name, uint8Array, Keypub, Keypriv, function(message) {
+                          // 移除上传提示
+                          cm.undo();
+                          
+                          if (message[2].code == 200) {
+                              let url = message[2].fileUrl;
+                              const currentCursor = cm.getCursor();
+                              
+                              // 插入简单的Markdown链接
+                              const markdownText = `[${file.name}](${uploadpath + url})\n`;
+                              cm.replaceRange(markdownText, currentCursor);
+                          } else {
+                              // 简单的错误提示
+                              alert('上传失败: ' + (message[2].message || '未知错误'));
+                          }
+                      });
+                  };
+                  
+                  // 读取文件
+                  reader.readAsArrayBuffer(file);
+              });
+              
+              input.click();
+          },
+          className: 'fa fa-upload',
+          title: '上传文件'
+      };      
       
       const simplemde = new SimpleMDE({ 
         element: editorElement,
@@ -994,7 +1049,7 @@
         status: false,
 
         toolbar: ["bold", "italic", "heading", "|", "code", "quote", "unordered-list", "ordered-list", "|", 
-        "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide", insertImageButton, '|',],
+        "link", "image", "|", "preview", "side-by-side", "fullscreen", "|", "guide", insertImageButton, '|',uploadFileButton,],
         // 添加编辑器高度配置（部分主题可能需要）
         autosize: false,
       });
