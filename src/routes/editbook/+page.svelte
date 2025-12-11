@@ -838,7 +838,7 @@
     
     bookId = getBookId();
     if (bookId) {
-       await get_book_id(bookId,function(message){
+       await get_book_id(bookId,async function(message){
         if (message != "EOSE"){
            
           bookAuthor    = message.data.author;
@@ -866,8 +866,6 @@
                     return;
                   }
 
- 
-
                   coAuthors = [...coAuthors,  
                     {email:e.email,
                     pubkey:e.pubkey}
@@ -887,16 +885,18 @@
           bookCover.style.backgroundSize = 'cover';
           bookCover.style.backgroundPosition = 'center';
           bookCover.innerHTML = ''; // 清空原有文字
+
+          await get_chapter_author(bookId,"outline.md",author_pubkey,function(message){
+              if (message != "EOSE"){
+                
+                initialOutline = JSON.parse(message.data)
+                nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
+              }
+          });
         }
        })
 
-       await get_chapter_author(bookId,"outline.md",author_pubkey,function(message){
-           if (message != "EOSE"){
-             
-            initialOutline = JSON.parse(message.data)
-            nextId = Math.max(...initialOutline.flatMap(item => [item.id, ...(item.children || []).map(child => child.id)])) + 1;
-          }
-       });
+
  
     }
 
