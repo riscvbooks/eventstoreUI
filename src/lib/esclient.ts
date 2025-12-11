@@ -190,6 +190,14 @@ export async function delete_event(eventid,adminpubkey,adminprivkey,callback){
   }); 
 }
 
+function asyncPublish(client, sevent) {
+  return new Promise((resolve, reject) => {
+    client.publish(sevent, function (message) {
+      resolve(message);  // 等待服务器回包
+    });
+  });
+}
+
 export async function upload_file(filename,fileData,pubkey,privkey,callback){
   await client.connect().catch(error => {});
 
@@ -203,9 +211,42 @@ export async function upload_file(filename,fileData,pubkey,privkey,callback){
     },
     "tags": [['t','upload_file']]
   };
-
   const sevent = secureEvent(event,privkey);
-  sevent.data.fileData = fileData;
+
+  const DATATYPE =  {
+      START: 1,      // 开始（元数据）
+      CHUNK: 2,      // 中间数据块
+      END: 4,        // 结束
+      
+  };
+
+  const CHUNK_SIZE = 65536 * 10; // 每片大小，例如640KB
+  const totalChunks = Math.ceil(fileData.length / CHUNK_SIZE);
+   
+  sevent.data.fileData = {
+    type:DATATYPE.START,
+  }
+ 
+  await asyncPublish(client,sevent) ;
+
+ 
+  for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, fileData.length);
+      const chunk = fileData.slice(start, end);
+
+      sevent.data.fileData = {
+            type:DATATYPE.CHUNK,
+            buffer: chunk};
+      
+      await asyncPublish(client,sevent) ;
+      callback([0,1,{code:202,message:`${chunkIndex}/${totalChunks}`}] );
+
+  }
+
+  sevent.data.fileData = {
+    type:DATATYPE.END,
+  }
  
   client.publish(sevent,function(message){
     callback(message);

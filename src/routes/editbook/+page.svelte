@@ -1018,6 +1018,10 @@
                       upload_file(file.name, uint8Array, Keypub, Keypriv, function(message) {
                           // 移除上传提示
                           cm.undo();
+                          if (message[2].code == 202){
+                             cm.replaceRange(`[上传中:${message[2].message}]`, cursor);
+                             return 
+                          }
                           
                           if (message[2].code == 200) {
                               let url = message[2].fileUrl;
@@ -1030,6 +1034,8 @@
                               // 简单的错误提示
                               alert('上传失败: ' + (message[2].message || '未知错误'));
                           }
+
+
                       });
                   };
                   
