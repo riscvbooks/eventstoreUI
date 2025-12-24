@@ -268,6 +268,8 @@
         });
         if (uploadResult[2]?.code === 200) {
           blogData.coverUrl = uploadResult[2].fileUrl;
+        } else if (uploadResult[2]?.code === 202) {
+          //进度条
         } else {
           showNotification("封面上传失败", 2000, "error");
           return;
